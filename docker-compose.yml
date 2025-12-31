@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Separate Container)
+  postgres:
+    image: postgres:16-alpine
+    container_name: schoolbase-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+      POSTGRES_DB: ${DB_NAME:-schoolbase}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - schoolbase-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Object Storage (Separate Container - Crucial for file uploads)
+  minio:
+    image: minio/minio:latest
+    container_name: schoolbase-minio
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9000}:9000"      # MinIO API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"  # MinIO Console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - schoolbase-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Combined Application Container (Frontend + Backend in one image)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.combined
+    container_name: schoolbase-app
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"  # Frontend (Next.js)
+      - "${BACKEND_PORT:-3008}:3008"   # Backend API (NestJS)
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Backend Configuration
+      PORT: 3008
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      DB_NAME: ${DB_NAME:-schoolbase}
+      DB_SSL: ${DB_SSL:-false}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-in-production}
+      TOKEN_ACCESS_DURATION: ${TOKEN_ACCESS_DURATION:-1h}
+      TOKEN_REFRESH_DURATION: ${TOKEN_REFRESH_DURATION:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SUPERADMIN_LOGIN_URL: ${SUPERADMIN_LOGIN_URL:-http://localhost:3000/superadmin/login}
+      # Email Configuration (optional)
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@schoolbase.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-SchoolBase}
+      # App Configuration
+      APP_NAME: ${APP_NAME:-SchoolBase}
+      APP_SLUG: ${APP_SLUG:-schoolbase}
+      LOGO_URL: ${LOGO_URL:-}
+      SCHOOL_NAME: ${SCHOOL_NAME:-}
+      SCHOOL_LOGO_URL: ${SCHOOL_LOGO_URL:-}
+      # Paystack (optional)
+      PAYSTACK_URL: ${PAYSTACK_URL:-https://api.paystack.co}
+      PAYSTACK_KEY: ${PAYSTACK_KEY:-}
+      # MinIO Configuration (points to minio service)
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-schoolbase}
+      # Google OAuth (optional)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      # Other
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      INVITE_EXPIRATION_DAYS: ${INVITE_EXPIRATION_DAYS:-7}
+      # Frontend Configuration
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - schoolbase-network
+    volumes:
+      - ./SchoolBase-BE/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  schoolbase-network:
+    driver: bridge

@@ -1,0 +1,29 @@
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Cloned repositories (will be cloned by deploy script)
+SchoolBase-FE/
+SchoolBase-BE/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+

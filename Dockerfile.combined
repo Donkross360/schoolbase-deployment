@@ -1,0 +1,100 @@
+# Combined Dockerfile for Frontend + Backend in a Single Image
+# Uses supervisor to run both services
+FROM node:22-alpine AS base
+
+# Install supervisor and dependencies
+RUN apk add --no-cache supervisor curl bash
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# ============================================
+# Stage 1: Build Frontend
+# ============================================
+FROM base AS frontend-builder
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY SchoolBase-FE/package.json SchoolBase-FE/pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source
+COPY SchoolBase-FE/ ./
+
+# Build arguments
+ARG NEXT_PUBLIC_API_URL=http://localhost:3008/api/v1
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Set environment variables for build
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build frontend
+RUN pnpm run build
+
+# ============================================
+# Stage 2: Build Backend
+# ============================================
+FROM base AS backend-builder
+WORKDIR /app/backend
+
+# Copy backend package files
+COPY SchoolBase-BE/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy backend source
+COPY SchoolBase-BE/ ./
+
+# Build backend
+RUN npm run build
+
+# ============================================
+# Stage 3: Runtime Container
+# ============================================
+FROM base AS runner
+
+WORKDIR /app
+
+# Create app directories
+RUN mkdir -p /app/frontend /app/backend /var/log/supervisor /app/uploads
+
+# Copy built frontend (standalone output)
+COPY --from=frontend-builder /app/frontend/public /app/frontend/public
+COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend/
+COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/static
+
+# Copy built backend
+COPY --from=backend-builder /app/backend/dist /app/backend/dist
+COPY --from=backend-builder /app/backend/node_modules /app/backend/node_modules
+COPY --from=backend-builder /app/backend/package*.json /app/backend/
+COPY --from=backend-builder /app/backend/entrypoint.sh /app/backend/entrypoint.sh
+RUN chmod +x /app/backend/entrypoint.sh
+
+# Copy supervisor config
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 appuser
+
+# Set ownership
+RUN chown -R appuser:nodejs /app /var/log/supervisor
+
+# Expose ports
+EXPOSE 3000 3008
+
+# Set environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Switch to non-root user
+USER appuser
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
