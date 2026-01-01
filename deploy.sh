@@ -265,10 +265,25 @@ setup_environment() {
 }
 
 build_and_start_services() {
-    log_info "Building Docker images (this may take a while)..."
-    $COMPOSE_CMD build
+    # Check if we should rebuild (if FORCE_REBUILD env var is set, or if images don't exist)
+    local should_rebuild=false
+    
+    if [ "${FORCE_REBUILD:-false}" = "true" ]; then
+        should_rebuild=true
+        log_info "FORCE_REBUILD is set - will rebuild images"
+    elif ! $COMPOSE_CMD images | grep -q "schoolbase"; then
+        should_rebuild=true
+        log_info "Docker images not found - will build"
+    else
+        log_info "Docker images exist - skipping build (set FORCE_REBUILD=true to rebuild)"
+    fi
+    
+    if [ "$should_rebuild" = "true" ]; then
+        log_info "Building Docker images (this may take a while)..."
+        $COMPOSE_CMD build
+    fi
 
-    log_info "Starting services..."
+    log_info "Starting/updating services..."
     $COMPOSE_CMD up -d
 
     log_info "Waiting for services to be healthy..."

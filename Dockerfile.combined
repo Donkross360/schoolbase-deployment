@@ -73,7 +73,8 @@ COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/stat
 COPY --from=backend-builder /app/backend/dist /app/backend/dist
 COPY --from=backend-builder /app/backend/node_modules /app/backend/node_modules
 COPY --from=backend-builder /app/backend/package*.json /app/backend/
-COPY --from=backend-builder /app/backend/entrypoint.sh /app/backend/entrypoint.sh
+# Copy production entrypoint script (uses migration:run:prod)
+COPY entrypoint.sh /app/backend/entrypoint.sh
 RUN chmod +x /app/backend/entrypoint.sh
 
 # Copy supervisor config
