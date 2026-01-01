@@ -1,11 +1,23 @@
 #!/bin/sh
 
-# Check if backend was built successfully
-if [ ! -f /app/backend/dist/main.js ]; then
-    echo "ERROR: Backend build failed - /app/backend/dist/main.js not found"
+# Find main.js file (NestJS build output location can vary)
+MAIN_FILE=$(find /app/backend/dist -name "main.js" -type f 2>/dev/null | head -1)
+
+if [ -z "$MAIN_FILE" ]; then
+    echo "ERROR: Backend build failed - main.js not found"
+    echo "Searched in /app/backend/dist/"
+    echo ""
+    echo "Contents of /app/backend/dist/:"
+    ls -la /app/backend/dist/ || true
+    echo ""
+    echo "Searching for any .js files in dist:"
+    find /app/backend/dist -name "*.js" -type f 2>/dev/null | head -10 || echo "No .js files found"
+    echo ""
     echo "The backend build stage may have failed during Docker build"
     exit 1
 fi
+
+echo "Found main.js at: $MAIN_FILE"
 
 echo "Running database migrations..."
 # Use production migration command (uses compiled JS, not TypeScript)
@@ -14,5 +26,6 @@ npm run migration:run:prod || {
 }
 
 echo "Starting application..."
-exec npm run start:prod
+# Use the found main.js file directly
+exec node "$MAIN_FILE"
 
