@@ -51,8 +51,21 @@ RUN npm ci
 # Copy backend source
 COPY SchoolBase-BE/ ./
 
-# Build backend
-RUN npm run build
+# Build backend and verify main.js was created (may be in dist/ or dist/src/)
+RUN npm run build && \
+    if [ ! -f dist/main.js ] && [ ! -f dist/src/main.js ]; then \
+        echo "ERROR: Backend build failed - main.js not found in dist/ or dist/src/"; \
+        echo "Contents of dist directory:"; \
+        ls -la dist/ || true; \
+        echo "Searching for main.js:"; \
+        find dist -name "main.js" -type f || echo "main.js not found"; \
+        exit 1; \
+    fi && \
+    if [ -f dist/main.js ]; then \
+        echo "Backend build successful - main.js found at dist/main.js"; \
+    else \
+        echo "Backend build successful - main.js found at dist/src/main.js"; \
+    fi
 
 # ============================================
 # Stage 3: Runtime Container
