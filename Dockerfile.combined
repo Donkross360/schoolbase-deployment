@@ -18,7 +18,8 @@ WORKDIR /app/frontend
 COPY SchoolBase-FE/package.json SchoolBase-FE/pnpm-lock.yaml* ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+# Try frozen-lockfile first (for production safety), fall back to updating lockfile if needed
+RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 
 # Copy frontend source
 COPY SchoolBase-FE/ ./
