@@ -98,18 +98,18 @@ generate_frontend_config() {
     local output="/tmp/schoolbase-frontend.conf"
     
     if [ ! -f "$template" ]; then
-        log_error "Template not found: $template"
+        log_error "Template not found: $template" >&2
         exit 1
     fi
     
-    log_info "Generating frontend Nginx configuration..."
+    log_info "Generating frontend Nginx configuration..." >&2
     render_template "$template" "$output" "$FRONTEND_DOMAIN" "$BACKEND_DOMAIN"
     
     # Validate configuration
     if sudo nginx -t -c "$output" 2>/dev/null; then
-        log_success "Frontend configuration is valid"
+        log_success "Frontend configuration is valid" >&2
     else
-        log_warn "Configuration validation skipped (nginx may not be installed yet)"
+        log_warn "Configuration validation skipped (nginx may not be installed yet)" >&2
     fi
     
     echo "$output"
@@ -121,18 +121,18 @@ generate_backend_config() {
     local output="/tmp/schoolbase-backend.conf"
     
     if [ ! -f "$template" ]; then
-        log_error "Template not found: $template"
+        log_error "Template not found: $template" >&2
         exit 1
     fi
     
-    log_info "Generating backend Nginx configuration..."
+    log_info "Generating backend Nginx configuration..." >&2
     render_template "$template" "$output" "$FRONTEND_DOMAIN" "$BACKEND_DOMAIN"
     
     # Validate configuration
     if sudo nginx -t -c "$output" 2>/dev/null; then
-        log_success "Backend configuration is valid"
+        log_success "Backend configuration is valid" >&2
     else
-        log_warn "Configuration validation skipped (nginx may not be installed yet)"
+        log_warn "Configuration validation skipped (nginx may not be installed yet)" >&2
     fi
     
     echo "$output"

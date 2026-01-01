@@ -68,6 +68,38 @@ check_domain_accessibility() {
     fi
 }
 
+# Check if Nginx is running and stop it temporarily for cert generation
+handle_nginx_for_cert() {
+    local nginx_was_running=false
+    
+    # Check if Nginx is running
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        log_info "Nginx is running. Temporarily stopping it for certificate generation..."
+        nginx_was_running=true
+        sudo systemctl stop nginx
+        sleep 2  # Give it time to fully stop
+        log_success "Nginx stopped temporarily"
+    fi
+    
+    echo "$nginx_was_running"
+}
+
+# Restart Nginx if it was running before
+restart_nginx_if_needed() {
+    local nginx_was_running=$1
+    
+    if [ "$nginx_was_running" = "true" ]; then
+        log_info "Restarting Nginx..."
+        sudo systemctl start nginx
+        sleep 2
+        if systemctl is-active --quiet nginx 2>/dev/null; then
+            log_success "Nginx restarted successfully"
+        else
+            log_warn "Nginx failed to restart. You may need to start it manually."
+        fi
+    fi
+}
+
 # Generate SSL certificate for a domain
 generate_certificate() {
     local domain=$1
@@ -88,24 +120,35 @@ generate_certificate() {
     else
         log_info "Generating SSL certificate for $domain..."
         
-        # Generate certificate using standalone method (Nginx may not be ready)
-        sudo certbot certonly \
+        # Stop Nginx temporarily if it's running
+        local nginx_was_running=$(handle_nginx_for_cert)
+        
+        # Generate certificate using standalone method
+        local cert_success=false
+        if sudo certbot certonly \
             --standalone \
             --non-interactive \
             --agree-tos \
             --email "$SSL_EMAIL" \
             -d "$domain" \
-            --preferred-challenges http \
-            || {
-                log_error "Failed to generate certificate for $domain"
-                log_error "Make sure:"
-                log_error "  1. Domain $domain points to this server's IP"
-                log_error "  2. Port 80 is accessible from the internet"
-                log_error "  3. No firewall is blocking port 80"
-                exit 1
-            }
+            --preferred-challenges http; then
+            cert_success=true
+            log_success "SSL certificate generated for $domain"
+        else
+            log_error "Failed to generate certificate for $domain"
+            log_error "Make sure:"
+            log_error "  1. Domain $domain points to this server's IP"
+            log_error "  2. Port 80 is accessible from the internet"
+            log_error "  3. No firewall is blocking port 80"
+            log_error "  4. No other service is using port 80"
+        fi
         
-        log_success "SSL certificate generated for $domain"
+        # Restart Nginx if it was running before
+        restart_nginx_if_needed "$nginx_was_running"
+        
+        if [ "$cert_success" = "false" ]; then
+            exit 1
+        fi
     fi
 }
 
