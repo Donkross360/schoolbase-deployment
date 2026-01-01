@@ -21,11 +21,13 @@ echo "Found main.js at: $MAIN_FILE"
 
 echo "Running database migrations..."
 # Use production migration command (uses compiled JS, not TypeScript)
-npm run migration:run:prod || {
+# Must run from /app/backend directory where package.json is located
+cd /app/backend && npm run migration:run:prod || {
     echo "Migration failed or no migrations to run - continuing..."
 }
 
 echo "Starting application..."
 # Use the found main.js file directly
+cd /app/backend
 exec node "$MAIN_FILE"
 
