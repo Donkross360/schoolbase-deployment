@@ -88,12 +88,16 @@ main() {
     log_info "Step 5: Configuring Nginx..."
     "$SCRIPT_DIR/scripts/setup-nginx.sh" "$FRONTEND_DOMAIN" "$BACKEND_DOMAIN"
 
-    # Step 6: Build and start Docker Compose services
-    log_info "Step 6: Building and starting services..."
+    # Step 6: Setup Docker Compose command
+    log_info "Step 6: Setting up Docker Compose..."
+    setup_docker_compose
+
+    # Step 7: Build and start Docker Compose services
+    log_info "Step 7: Building and starting services..."
     build_and_start_services
 
-    # Step 7: Health checks
-    log_info "Step 7: Running health checks..."
+    # Step 8: Health checks
+    log_info "Step 8: Running health checks..."
     run_health_checks
 
     log_success "=========================================="
@@ -110,14 +114,60 @@ main() {
     fi
     echo ""
     log_info "Useful commands:"
-    log_info "  View logs:    docker-compose logs -f"
-    log_info "  Stop services: docker-compose down"
-    log_info "  Restart:      docker-compose restart"
+    log_info "  View logs:    $COMPOSE_CMD logs -f"
+    log_info "  Stop services: $COMPOSE_CMD down"
+    log_info "  Restart:      $COMPOSE_CMD restart"
 }
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
+
+# Detect which docker compose command is available
+detect_docker_compose() {
+    # Try docker compose (V2 plugin) first
+    if docker compose version >/dev/null 2>&1; then
+        echo "docker compose"
+        return 0
+    fi
+    # Try docker-compose (standalone)
+    if command -v docker-compose >/dev/null 2>&1; then
+        echo "docker-compose"
+        return 0
+    fi
+    # Neither found
+    return 1
+}
+
+# Check docker permissions and set compose command
+setup_docker_compose() {
+    # Detect compose command
+    if ! DOCKER_COMPOSE_CMD=$(detect_docker_compose); then
+        log_error "Docker Compose not found. Please install Docker Compose first."
+        exit 1
+    fi
+    
+    # Check if docker can be run without sudo
+    if docker ps >/dev/null 2>&1; then
+        DOCKER_CMD="docker"
+        COMPOSE_CMD="$DOCKER_COMPOSE_CMD"
+    elif sudo docker ps >/dev/null 2>&1; then
+        DOCKER_CMD="sudo docker"
+        # For docker compose (V2), we need sudo before docker
+        if [[ "$DOCKER_COMPOSE_CMD" == "docker compose" ]]; then
+            COMPOSE_CMD="sudo docker compose"
+        else
+            COMPOSE_CMD="sudo docker-compose"
+        fi
+        log_warn "Using sudo for Docker commands. Consider logging out and back in after being added to docker group."
+    else
+        log_error "Cannot access Docker. Please ensure Docker is installed and running."
+        log_error "If you were just added to the docker group, you may need to logout and login again."
+        exit 1
+    fi
+    
+    log_info "Using Docker Compose command: $COMPOSE_CMD"
+}
 
 manage_repositories() {
     # Frontend repository
@@ -216,19 +266,19 @@ setup_environment() {
 
 build_and_start_services() {
     log_info "Building Docker images (this may take a while)..."
-    docker-compose build
+    $COMPOSE_CMD build
 
     log_info "Starting services..."
-    docker-compose up -d
+    $COMPOSE_CMD up -d
 
     log_info "Waiting for services to be healthy..."
     sleep 10
 
     # Check if services are running
-    if docker-compose ps | grep -q "Up"; then
+    if $COMPOSE_CMD ps | grep -q "Up"; then
         log_success "Services started successfully"
     else
-        log_error "Some services failed to start. Check logs with: docker-compose logs"
+        log_error "Some services failed to start. Check logs with: $COMPOSE_CMD logs"
         exit 1
     fi
 }
@@ -237,7 +287,7 @@ run_health_checks() {
     log_info "Checking service health..."
     
     # Check if containers are running
-    if ! docker-compose ps | grep -q "Up"; then
+    if ! $COMPOSE_CMD ps | grep -q "Up"; then
         log_error "Services are not running"
         return 1
     fi
