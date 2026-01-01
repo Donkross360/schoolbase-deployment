@@ -20,11 +20,19 @@ fi
 echo "Found main.js at: $MAIN_FILE"
 
 echo "Running database migrations..."
-# Use production migration command (uses compiled JS, not TypeScript)
-# Must run from /app/backend directory where package.json is located
-cd /app/backend && npm run migration:run:prod || {
-    echo "Migration failed or no migrations to run - continuing..."
-}
+# Find data-source.js file (may be in dist/ or dist/src/)
+DATA_SOURCE=$(find /app/backend/dist -name "data-source.js" -path "*/database/data-source.js" 2>/dev/null | head -1)
+
+if [ -z "$DATA_SOURCE" ]; then
+    echo "WARNING: data-source.js not found, skipping migrations"
+    echo "This may be normal if migrations are handled differently"
+else
+    echo "Found data-source.js at: $DATA_SOURCE"
+    # Run migrations using the found data-source file
+    cd /app/backend && npx typeorm migration:run -d "$DATA_SOURCE" || {
+        echo "Migration failed or no migrations to run - continuing..."
+    }
+fi
 
 echo "Starting application..."
 # Use the found main.js file directly
