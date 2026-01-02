@@ -19,20 +19,9 @@ fi
 
 echo "Found main.js at: $MAIN_FILE"
 
-echo "Running database migrations..."
-# Find data-source.js file (may be in dist/ or dist/src/)
-DATA_SOURCE=$(find /app/backend/dist -name "data-source.js" -path "*/database/data-source.js" 2>/dev/null | head -1)
-
-if [ -z "$DATA_SOURCE" ]; then
-    echo "WARNING: data-source.js not found, skipping migrations"
-    echo "This may be normal if migrations are handled differently"
-else
-    echo "Found data-source.js at: $DATA_SOURCE"
-    # Run migrations using the found data-source file
-    cd /app/backend && npx typeorm migration:run -d "$DATA_SOURCE" || {
-        echo "Migration failed or no migrations to run - continuing..."
-    }
-fi
+echo "Note: Migrations are handled automatically by the backend on startup"
+echo "The backend has migrationsRun enabled in TypeORM configuration"
+echo "Migrations will run in timestamp order automatically"
 
 echo "Starting application..."
 # Use the found main.js file directly
