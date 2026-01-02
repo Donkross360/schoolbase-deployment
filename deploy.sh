@@ -258,6 +258,17 @@ setup_environment() {
         FRONTEND_DOMAIN="${FRONTEND_DOMAIN:-yourdomain.com}"
         BACKEND_DOMAIN="${BACKEND_DOMAIN:-api.yourdomain.com}"
         SSL_EMAIL="${SSL_EMAIL:-admin@yourdomain.com}"
+        
+        # Set NEXT_PUBLIC_API_BASE_URL based on BACKEND_DOMAIN if not explicitly set
+        if [[ -z "$NEXT_PUBLIC_API_BASE_URL" ]]; then
+            if [[ "$BACKEND_DOMAIN" != "api.yourdomain.com" ]]; then
+                # Use HTTPS for production domains
+                export NEXT_PUBLIC_API_BASE_URL="https://${BACKEND_DOMAIN}/api/v1"
+            else
+                # Use localhost for development
+                export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}"
+            fi
+        fi
     else
         log_error ".env file not found"
         exit 1
