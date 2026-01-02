@@ -292,7 +292,10 @@ build_and_start_services() {
     
     if [ "$should_rebuild" = "true" ]; then
         log_info "Building Docker images (this may take a while)..."
-        $COMPOSE_CMD build
+        log_info "Using NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3008}"
+        $COMPOSE_CMD build --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3008}" \
+                            --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}" \
+                            --build-arg NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
     fi
 
     log_info "Starting/updating services..."
