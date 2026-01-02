@@ -47,6 +47,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.combined
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3008}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     container_name: schoolbase-app
     restart: unless-stopped
     ports:
@@ -100,7 +104,8 @@ services:
       INVITE_EXPIRATION_DAYS: ${INVITE_EXPIRATION_DAYS:-7}
       # Frontend Configuration
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}}
+      # Note: NEXT_PUBLIC_API_BASE_URL should NOT include /api/v1 (proxy-auth route adds it)
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3008}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     depends_on:
       postgres:

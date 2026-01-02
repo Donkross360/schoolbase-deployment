@@ -260,13 +260,14 @@ setup_environment() {
         SSL_EMAIL="${SSL_EMAIL:-admin@yourdomain.com}"
         
         # Set NEXT_PUBLIC_API_BASE_URL based on BACKEND_DOMAIN if not explicitly set
+        # Note: This should NOT include /api/v1 as the proxy-auth route adds it
         if [[ -z "$NEXT_PUBLIC_API_BASE_URL" ]]; then
             if [[ "$BACKEND_DOMAIN" != "api.yourdomain.com" ]]; then
-                # Use HTTPS for production domains
-                export NEXT_PUBLIC_API_BASE_URL="https://${BACKEND_DOMAIN}/api/v1"
+                # Use HTTPS for production domains (without /api/v1)
+                export NEXT_PUBLIC_API_BASE_URL="https://${BACKEND_DOMAIN}"
             else
-                # Use localhost for development
-                export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}"
+                # Use localhost for development (without /api/v1)
+                export NEXT_PUBLIC_API_BASE_URL="http://localhost:3008"
             fi
         fi
     else
