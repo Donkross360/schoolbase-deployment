@@ -81,18 +81,12 @@ services:
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@schoolbase.com}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-SchoolBase}
-      # Frontend Environment Variables (for Next.js build)
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3008}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       # App Configuration
       APP_NAME: ${APP_NAME:-SchoolBase}
       APP_SLUG: ${APP_SLUG:-schoolbase}
       LOGO_URL: ${LOGO_URL:-}
       SCHOOL_NAME: ${SCHOOL_NAME:-}
       SCHOOL_LOGO_URL: ${SCHOOL_LOGO_URL:-}
-      # Super Admin Configuration
-      AUTO_DEACTIVATE_SUPERADMIN: ${AUTO_DEACTIVATE_SUPERADMIN:-false}
       # Paystack (optional)
       PAYSTACK_URL: ${PAYSTACK_URL:-https://api.paystack.co}
       PAYSTACK_KEY: ${PAYSTACK_KEY:-}
@@ -108,6 +102,8 @@ services:
       # Other
       LOG_LEVEL: ${LOG_LEVEL:-info}
       INVITE_EXPIRATION_DAYS: ${INVITE_EXPIRATION_DAYS:-7}
+      # Super Admin Configuration
+      AUTO_DEACTIVATE_SUPERADMIN: ${AUTO_DEACTIVATE_SUPERADMIN:-false}
       # Frontend Configuration
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3008/api/v1}
       # Note: NEXT_PUBLIC_API_BASE_URL should NOT include /api/v1 (proxy-auth route adds it)
