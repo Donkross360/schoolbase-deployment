@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+docs
+nginx
+scripts
+SchoolBase-FE/.git
+SchoolBase-FE/.next
+SchoolBase-FE/node_modules
+SchoolBase-BE/.git
+SchoolBase-BE/dist
+SchoolBase-BE/node_modules
+*.sql
+*.sql.gz
+

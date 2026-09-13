@@ -1,0 +1,90 @@
+services:
+  app:
+    image: ${SCHOOLBASE_IMAGE:?set SCHOOLBASE_IMAGE to an immutable image tag}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3008"
+      API_BASE_URL: http://127.0.0.1:3008
+      API_PUBLIC_URL: ${API_PUBLIC_URL:?set API_PUBLIC_URL}
+      FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL}
+      SUPERADMIN_LOGIN_URL: ${SUPERADMIN_LOGIN_URL:?set SUPERADMIN_LOGIN_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      DATABASE_SETUP_ENABLED: "false"
+
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:?set DB_USER}
+      DB_PASS: ${DB_PASS:?set DB_PASS}
+      DB_NAME: ${DB_NAME:?set DB_NAME}
+      DB_SSL: "false"
+
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      TOKEN_ACCESS_DURATION: ${TOKEN_ACCESS_DURATION:-1h}
+      TOKEN_REFRESH_DURATION: ${TOKEN_REFRESH_DURATION:-7d}
+      UPLOAD_KEY: ${UPLOAD_KEY:?set UPLOAD_KEY}
+
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:?set MINIO_BUCKET_NAME}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:?set MINIO_PUBLIC_URL}
+
+      APP_NAME: ${APP_NAME:-SchoolBase}
+      APP_SLUG: ${APP_SLUG:?set APP_SLUG}
+      SCHOOL_NAME: ${SCHOOL_NAME:?set SCHOOL_NAME}
+      SCHOOL_LOGO_URL: ${SCHOOL_LOGO_URL:-}
+      LOGO_URL: ${LOGO_URL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      INVITE_EXPIRATION_DAYS: ${INVITE_EXPIRATION_DAYS:-7}
+      AUTO_DEACTIVATE_SUPERADMIN: ${AUTO_DEACTIVATE_SUPERADMIN:-false}
+
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-SchoolBase}
+      PAYSTACK_URL: ${PAYSTACK_URL:-https://api.paystack.co}
+      PAYSTACK_KEY: ${PAYSTACK_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      HASH_SALT: ${HASH_SALT:-12}
+    expose:
+      - "3000"
+      - "3008"
+    networks:
+      schoolbase_shared:
+        aliases:
+          - schoolbase-${APP_SLUG:?set APP_SLUG}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null &&
+          curl --fail --silent --show-error http://127.0.0.1:3008/api/v1/health/ready >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    stop_grace_period: 30s
+    mem_limit: ${APP_MEMORY_LIMIT:-1g}
+    cpus: ${APP_CPU_LIMIT:-1.0}
+    pids_limit: ${APP_PIDS_LIMIT:-300}
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+networks:
+  schoolbase_shared:
+    name: schoolbase-shared
+    external: true
+

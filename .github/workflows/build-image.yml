@@ -1,0 +1,89 @@
+name: Build SchoolBase image
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontend_ref:
+        description: Frontend branch, tag, or commit
+        required: true
+        default: feat/runtime-templating
+      backend_ref:
+        description: Backend branch, tag, or commit
+        required: true
+        default: feat/runtime-templating
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out deployment repository
+        uses: actions/checkout@v5
+
+      - name: Check out frontend
+        uses: actions/checkout@v5
+        with:
+          repository: schoolbaseafrica/SchoolBase-FE
+          ref: ${{ inputs.frontend_ref }}
+          path: SchoolBase-FE
+
+      - name: Check out backend
+        uses: actions/checkout@v5
+        with:
+          repository: schoolbaseafrica/SchoolBase-BE
+          ref: ${{ inputs.backend_ref }}
+          path: SchoolBase-BE
+
+      - name: Resolve immutable image metadata
+        id: metadata
+        shell: bash
+        run: |
+          frontend_sha=$(git -C SchoolBase-FE rev-parse HEAD)
+          backend_sha=$(git -C SchoolBase-BE rev-parse HEAD)
+          owner=$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/${owner}/schoolbase"
+          tag="fe-${frontend_sha:0:12}-be-${backend_sha:0:12}"
+          {
+            echo "frontend_sha=$frontend_sha"
+            echo "backend_sha=$backend_sha"
+            echo "image=$image"
+            echo "tag=$tag"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish immutable image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.combined
+          push: true
+          tags: ${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.tag }}
+          build-args: |
+            FRONTEND_REVISION=${{ steps.metadata.outputs.frontend_sha }}
+            BACKEND_REVISION=${{ steps.metadata.outputs.backend_sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Publish deployment coordinates
+        run: |
+          echo "### SchoolBase image" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.tag }}' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Frontend: ${{ steps.metadata.outputs.frontend_sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Backend: ${{ steps.metadata.outputs.backend_sha }}" >> "$GITHUB_STEP_SUMMARY"
+
