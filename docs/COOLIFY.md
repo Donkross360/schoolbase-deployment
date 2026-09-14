@@ -146,7 +146,10 @@ internal container port to target. The Compose file joins the existing
 `schoolbase-shared` network for PostgreSQL and MinIO access. It does not publish
 either application port. Under **Configuration > Advanced**, enable **Connect
 To Predefined Network** so Coolify adds its managed destination network and
-generates the proxy labels. Keep Raw Compose Deployment disabled.
+generates the proxy labels. The Compose file pins Traefik to the external
+`coolify` network so the proxy does not select the private database network when
+the container has several network attachments. Keep Raw Compose Deployment
+disabled.
 
 Deploy Demo and run:
 

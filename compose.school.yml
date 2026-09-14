@@ -59,6 +59,8 @@ services:
     expose:
       - "3000"
       - "3008"
+    labels:
+      traefik.docker.network: coolify
     networks:
       schoolbase_shared:
         aliases:
