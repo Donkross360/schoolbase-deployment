@@ -64,7 +64,7 @@ WHERE EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'app_user')
 SQL
 fi
 
-PGPASSWORD=$db_password psql -h 127.0.0.1 -U "$db_user" -d "$db_name" \
+PGPASSWORD=$db_password psql -h postgres -U "$db_user" -d "$db_name" \
   -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null
 
 echo "PostgreSQL resources for $school are ready ($mode mode)."

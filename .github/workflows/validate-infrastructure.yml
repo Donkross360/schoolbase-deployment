@@ -134,13 +134,13 @@ jobs:
             /bin/sh /opt/schoolbase/provision-postgres.sh demo rotate
           if docker compose -f compose.infrastructure.yml exec -T \
             -e PGPASSWORD="$DEMO_DB_PASSWORD" postgres \
-            psql -h 127.0.0.1 -U sb_demo_app -d sb_demo -c 'SELECT 1'; then
+            psql -h postgres -U sb_demo_app -d sb_demo -c 'SELECT 1'; then
             echo 'Old Demo database password still works after rotation.' >&2
             exit 1
           fi
           docker compose -f compose.infrastructure.yml exec -T \
             -e PGPASSWORD="$ROTATED_DB_PASSWORD" postgres \
-            psql -h 127.0.0.1 -U sb_demo_app -d sb_demo -c 'SELECT 1' >/dev/null
+            psql -h postgres -U sb_demo_app -d sb_demo -c 'SELECT 1' >/dev/null
 
           docker compose -f compose.infrastructure.yml exec -T \
             -e DEMO_MINIO_SECRET_KEY="$ROTATED_MINIO_SECRET" minio \
