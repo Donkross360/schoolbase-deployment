@@ -175,6 +175,21 @@ https://api.stpaul.schoolbase.africa:3008
 Deploy and run the verification script with the St Paul URLs. Confirm Demo
 remains available during the St Paul deployment.
 
+### Verify tenant identity during an outage
+
+After each school has loaded successfully once, temporarily block or stop that
+school's backend and refresh its frontend. The frontend stores the last valid
+runtime school configuration under the exact browser hostname, so St Paul can
+continue to show St Paul branding and Demo can continue to show Demo branding.
+The cache does not cross hostnames even though both applications use the same
+image.
+
+Also test in a new private browser window with no cached configuration. If the
+backend and the container runtime-config endpoint are both unavailable, the
+page must show the neutral SchoolBase availability message. It must never show
+the sample profile or another school's name. Restore the backend and use **Try
+again** to confirm normal branding returns.
+
 ## 8. Coolify networking setting
 
 The Compose definitions explicitly use the external `schoolbase-shared`
