@@ -44,6 +44,7 @@ jobs:
       STPAUL_MINIO_SECRET_KEY: ci-stpaul-minio-secret-key
       RESTORE_MINIO_SECRET_KEY: ci-restore-minio-secret-key
       EXPECTED_TABLE_COUNT: 1
+      MINIO_PUBLIC_URL: http://127.0.0.1:9000
     steps:
       - uses: actions/checkout@v5
 

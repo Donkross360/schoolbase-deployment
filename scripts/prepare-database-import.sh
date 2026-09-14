@@ -10,9 +10,10 @@ esac
 
 : "${RESTORE_MINIO_ACCESS_KEY:?set RESTORE_MINIO_ACCESS_KEY}"
 : "${RESTORE_MINIO_SECRET_KEY:?set RESTORE_MINIO_SECRET_KEY}"
+: "${MINIO_PUBLIC_URL:?set MINIO_PUBLIC_URL}"
 
 root_alias=schoolbase-root
-restore_alias=schoolbase-restore
+restore_alias=schoolbase-restore-public
 bucket=schoolbase-imports
 policy=schoolbase-imports
 
@@ -30,7 +31,7 @@ if ! mc admin user info "$root_alias" "$RESTORE_MINIO_ACCESS_KEY" >/dev/null 2>&
   mc admin user add "$root_alias" "$RESTORE_MINIO_ACCESS_KEY" "$RESTORE_MINIO_SECRET_KEY" >/dev/null
 fi
 mc admin policy attach "$root_alias" "$policy" --user "$RESTORE_MINIO_ACCESS_KEY" >/dev/null
-mc alias set "$restore_alias" http://127.0.0.1:9000 \
+mc alias set "$restore_alias" "${MINIO_PUBLIC_URL%/}" \
   "$RESTORE_MINIO_ACCESS_KEY" "$RESTORE_MINIO_SECRET_KEY" >/dev/null
 
 echo "Use the upload command below within one hour:"

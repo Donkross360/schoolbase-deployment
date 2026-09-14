@@ -54,6 +54,7 @@ services:
       MINIO_BUCKET_PUBLIC_READ: ${MINIO_BUCKET_PUBLIC_READ:-true}
       RESTORE_MINIO_ACCESS_KEY: ${RESTORE_MINIO_ACCESS_KEY:-schoolbase_restore}
       RESTORE_MINIO_SECRET_KEY: ${RESTORE_MINIO_SECRET_KEY:?set RESTORE_MINIO_SECRET_KEY}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://files.schoolbase.africa}
     expose:
       - "9000"
       - "9001"

@@ -91,6 +91,8 @@ of changing the credential silently.
 Set `RESTORE_MINIO_ACCESS_KEY` and `RESTORE_MINIO_SECRET_KEY` on the
 infrastructure resource, reload Compose, and redeploy. The transfer bucket is
 private and its credentials are separate from each application's credentials.
+Confirm that `MINIO_PUBLIC_URL=https://files.schoolbase.africa` and its DNS A
+record resolves to the Coolify server before generating an upload command.
 
 For Demo, create a MinIO Scheduled Task using container `minio` and command:
 
