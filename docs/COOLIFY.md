@@ -162,6 +162,11 @@ API_PUBLIC_URL=https://api.demo.schoolbase.africa \
 Verify login, restored records, a new image upload, and the resulting
 `files.schoolbase.africa/demo/...` URL before continuing.
 
+In **Settings > Public Website**, confirm that the restored website layout is
+selected. Demo's restored value is **One-page website**. Switching to
+**Multi-page website** changes the public root to `/site` and uses the saved
+multi-page content; switching back keeps that content available for later.
+
 ## 7. Deploy St Paul
 
 Create another Coolify application from the same Compose file and immutable
@@ -174,6 +179,10 @@ https://api.stpaul.schoolbase.africa:3008
 
 Deploy and run the verification script with the St Paul URLs. Confirm Demo
 remains available during the St Paul deployment.
+
+Choose St Paul's public website layout under **Settings > Public Website**.
+This choice belongs only to St Paul and does not change Demo even though both
+applications use the same image.
 
 ### Verify tenant identity during an outage
 

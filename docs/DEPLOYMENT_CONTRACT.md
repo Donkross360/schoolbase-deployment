@@ -69,6 +69,30 @@ are runtime variables and must not be baked into the image.
 Email, Paystack, Google OAuth, branding, log level, token duration, and invite
 expiry settings remain optional until their corresponding feature is enabled.
 
+`SCHOOL_NAME` is also the tenant-facing API identity. For example, Demo's API
+documentation is titled **SchoolBase Demo API**. The immutable image must not
+contain an old product or another school's name in Swagger, authentication-app
+labels, or tenant welcome emails.
+
+## Public website layout contract
+
+Website layout is school data, not an image or environment setting. Each
+school selects its layout under **Settings > Public Website**:
+
+- **One-page website** keeps the public content on one scrolling page.
+- **Multi-page website** provides separate Home, About, Academics, Facilities,
+  Gallery, News, and Contact pages.
+
+The backend stores the selection in `schools.use_marketing_site` and the
+multi-page content in `schools.marketing_site_config`. Switching layouts must
+preserve both one-page and multi-page content so a school can switch back
+without rebuilding the image or re-entering information. The public `/` route
+reads the school record and redirects to `/landing` or `/site` accordingly.
+
+This setting must never be baked into `SCHOOLBASE_IMAGE`: Demo and St Paul use
+the same immutable image while keeping independent layouts and content in their
+separate databases.
+
 ## Build-time variables
 
 No school-specific URL, credential, school name, or branding value may be a
