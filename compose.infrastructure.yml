@@ -6,10 +6,18 @@ services:
       POSTGRES_USER: ${POSTGRES_ADMIN_USER:?set POSTGRES_ADMIN_USER}
       POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?set POSTGRES_ADMIN_PASSWORD}
       POSTGRES_DB: postgres
+      DEMO_DB_USER: ${DEMO_DB_USER:-sb_demo_app}
+      DEMO_DB_PASSWORD: ${DEMO_DB_PASSWORD:?set DEMO_DB_PASSWORD}
+      STPAUL_DB_USER: ${STPAUL_DB_USER:-sb_stpaul_app}
+      STPAUL_DB_PASSWORD: ${STPAUL_DB_PASSWORD:?set STPAUL_DB_PASSWORD}
     expose:
       - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    configs:
+      - source: provision_postgres
+        target: /opt/schoolbase/provision-postgres.sh
+        mode: 0555
     networks:
       schoolbase_shared:
         aliases:
@@ -36,11 +44,20 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      DEMO_MINIO_ACCESS_KEY: ${DEMO_MINIO_ACCESS_KEY:-sb_demo_app}
+      DEMO_MINIO_SECRET_KEY: ${DEMO_MINIO_SECRET_KEY:?set DEMO_MINIO_SECRET_KEY}
+      STPAUL_MINIO_ACCESS_KEY: ${STPAUL_MINIO_ACCESS_KEY:-sb_stpaul_app}
+      STPAUL_MINIO_SECRET_KEY: ${STPAUL_MINIO_SECRET_KEY:?set STPAUL_MINIO_SECRET_KEY}
+      MINIO_BUCKET_PUBLIC_READ: ${MINIO_BUCKET_PUBLIC_READ:-true}
     expose:
       - "9000"
       - "9001"
     volumes:
       - minio_data:/data
+    configs:
+      - source: provision_minio
+        target: /opt/schoolbase/provision-minio.sh
+        mode: 0555
     networks:
       schoolbase_shared:
         aliases:
@@ -70,3 +87,9 @@ networks:
   schoolbase_shared:
     name: schoolbase-shared
     driver: bridge
+
+configs:
+  provision_postgres:
+    file: ./scripts/provision-postgres.sh
+  provision_minio:
+    file: ./scripts/provision-minio.sh

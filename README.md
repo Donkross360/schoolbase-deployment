@@ -15,7 +15,9 @@ secrets, resource limits, and frontend/API domains.
 | `.github/workflows/build-image.yml` | Builds and publishes an immutable GHCR image |
 | `config/*.env.example` | Non-secret configuration templates |
 | `scripts/validate-config.sh` | Rejects missing, weak, or placeholder configuration |
-| `scripts/provision-school.sh` | Idempotently creates a database role/database and MinIO user/bucket |
+| `scripts/provision-postgres.sh` | Creates each school's role/database from a Coolify task |
+| `scripts/provision-minio.sh` | Creates each school's user/bucket from a Coolify task |
+| `scripts/provision-school.sh` | Host-Docker compatibility wrapper for operators who have server access |
 | `scripts/restore-school.sh` | Safely restores a gzip-compressed SQL backup into an empty database |
 | `scripts/verify-school.sh` | Checks public frontend and API health routes |
 | `docs/DEPLOYMENT_CONTRACT.md` | Runtime, networking, isolation, and health contract |

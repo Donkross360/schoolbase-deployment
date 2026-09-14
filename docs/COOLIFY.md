@@ -49,21 +49,33 @@ Deploy and wait for PostgreSQL and MinIO to become healthy. Confirm that Docker
 network `schoolbase-shared` and volumes `schoolbase-postgres-data` and
 `schoolbase-minio-data` exist.
 
-## 4. Provision each school
+## 4. Provision each school without server SSH
 
-From a trusted server terminal with Docker access, load the infrastructure
-administrator variables and the school's variables, then run:
+Add all variables from `config/infrastructure.env.example` to the infrastructure
+resource in Coolify, then reload the Compose file and redeploy. Keep passwords
+and secret keys marked as secrets. The Compose file mounts provisioning scripts
+inside the PostgreSQL and MinIO containers.
 
-```bash
-./scripts/validate-config.sh infrastructure
-./scripts/validate-config.sh school
-./scripts/provision-school.sh
-```
+In the infrastructure resource, open **Scheduled Tasks** and create these four
+tasks. Select the listed service/container and use the exact command. The cron
+schedule can be annual because provisioning is normally triggered with
+**Execute Now** and is safe to rerun.
 
-Provision Demo with database `sb_demo`, database role `sb_demo_app`, bucket
-`demo`, and a Demo-only MinIO access key. Provision St Paul with database
-`sb_stpaul`, database role `sb_stpaul_app`, bucket `stpaul`, and a St Paul-only
-MinIO access key.
+| Task | Service/container | Command |
+| --- | --- | --- |
+| Demo database | `postgres` | `/bin/sh /opt/schoolbase/provision-postgres.sh demo` |
+| St Paul database | `postgres` | `/bin/sh /opt/schoolbase/provision-postgres.sh stpaul` |
+| Demo bucket | `minio` | `/bin/sh /opt/schoolbase/provision-minio.sh demo` |
+| St Paul bucket | `minio` | `/bin/sh /opt/schoolbase/provision-minio.sh stpaul` |
+
+Run each task with **Execute Now**. A successful result ends with either
+`PostgreSQL resources for <school> are ready.` or
+`MinIO resources for <school> are ready.` No database or object-store password
+appears in the task command or task log.
+
+This provisions database `sb_demo`, database role `sb_demo_app`, bucket `demo`,
+and Demo-only MinIO credentials. St Paul receives database `sb_stpaul`, role
+`sb_stpaul_app`, bucket `stpaul`, and separate MinIO credentials.
 
 The current upload feature returns persistent image URLs, so set
 `MINIO_BUCKET_PUBLIC_READ=true`. This grants anonymous object downloads only;

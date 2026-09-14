@@ -14,7 +14,7 @@ set -euo pipefail
 
 network=${SCHOOLBASE_NETWORK:-schoolbase-shared}
 postgres_image=${POSTGRES_CLIENT_IMAGE:-postgres:16.15-alpine}
-minio_client_image=${MINIO_CLIENT_IMAGE:-minio/mc:RELEASE.2025-07-16T15-35-03Z}
+minio_client_image=${MINIO_CLIENT_IMAGE:-quay.io/minio/mc:RELEASE.2025-07-16T15-35-03Z}
 public_read=${MINIO_BUCKET_PUBLIC_READ:-true}
 
 [[ "$DB_NAME" =~ ^[a-z][a-z0-9_]{1,62}$ ]] || { echo "Unsafe DB_NAME" >&2; exit 1; }
@@ -42,6 +42,8 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'app_user')
 \gexec
 SELECT format('CREATE DATABASE %I OWNER %I', :'app_db', :'app_user')
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'app_db')
+\gexec
+SELECT format('REVOKE CONNECT ON DATABASE %I FROM PUBLIC', :'app_db')
 \gexec
 SELECT format('GRANT CONNECT ON DATABASE %I TO %I', :'app_db', :'app_user')
 \gexec

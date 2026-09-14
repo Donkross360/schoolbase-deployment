@@ -1,0 +1,85 @@
+name: Validate shared infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - compose.infrastructure.yml
+      - scripts/provision-postgres.sh
+      - scripts/provision-minio.sh
+      - .github/workflows/validate-infrastructure.yml
+  pull_request:
+    paths:
+      - compose.infrastructure.yml
+      - scripts/provision-postgres.sh
+      - scripts/provision-minio.sh
+      - .github/workflows/validate-infrastructure.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      POSTGRES_ADMIN_USER: schoolbase_admin
+      POSTGRES_ADMIN_PASSWORD: ci-postgres-admin-password
+      DEMO_DB_PASSWORD: ci-demo-database-password
+      STPAUL_DB_PASSWORD: ci-stpaul-database-password
+      MINIO_ROOT_USER: schoolbase_minio_admin
+      MINIO_ROOT_PASSWORD: ci-minio-root-password
+      DEMO_MINIO_SECRET_KEY: ci-demo-minio-secret-key
+      STPAUL_MINIO_SECRET_KEY: ci-stpaul-minio-secret-key
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Render Compose configuration
+        run: docker compose -f compose.infrastructure.yml config --quiet
+
+      - name: Start shared services
+        run: docker compose -f compose.infrastructure.yml up -d --wait
+
+      - name: Provision both schools twice
+        run: |
+          for school in demo stpaul demo stpaul; do
+            docker compose -f compose.infrastructure.yml exec -T postgres \
+              /bin/sh /opt/schoolbase/provision-postgres.sh "$school"
+            docker compose -f compose.infrastructure.yml exec -T minio \
+              /bin/sh /opt/schoolbase/provision-minio.sh "$school"
+          done
+
+      - name: Verify database isolation
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T \
+            -e PGPASSWORD="$DEMO_DB_PASSWORD" postgres \
+            psql -h 127.0.0.1 -U sb_demo_app -d sb_demo -c 'SELECT 1' >/dev/null
+          if docker compose -f compose.infrastructure.yml exec -T \
+            -e PGPASSWORD="$DEMO_DB_PASSWORD" postgres \
+            psql -h 127.0.0.1 -U sb_demo_app -d sb_stpaul -c 'SELECT 1'; then
+            echo 'Demo unexpectedly connected to the St Paul database.' >&2
+            exit 1
+          fi
+
+      - name: Verify bucket write isolation
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
+            mc alias set demo-check http://127.0.0.1:9000 \
+              "$DEMO_MINIO_ACCESS_KEY" "$DEMO_MINIO_SECRET_KEY" >/dev/null
+            printf test >/tmp/isolation-check
+            mc cp /tmp/isolation-check demo-check/demo/isolation-check >/dev/null
+            if mc cp /tmp/isolation-check demo-check/stpaul/isolation-check; then
+              echo "Demo unexpectedly wrote to the St Paul bucket." >&2
+              exit 1
+            fi
+            mc rm demo-check/demo/isolation-check >/dev/null
+          '
+
+      - name: Show service logs after failure
+        if: failure()
+        run: docker compose -f compose.infrastructure.yml logs
+
+      - name: Remove test services
+        if: always()
+        run: docker compose -f compose.infrastructure.yml down --volumes
