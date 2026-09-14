@@ -13,7 +13,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
       DATABASE_SETUP_ENABLED: "false"
 
-      DB_HOST: postgres
+      DB_HOST: schoolbase-postgres
       DB_PORT: "5432"
       DB_USER: ${DB_USER:?set DB_USER}
       DB_PASS: ${DB_PASS:?set DB_PASS}
@@ -26,7 +26,7 @@ services:
       TOKEN_REFRESH_DURATION: ${TOKEN_REFRESH_DURATION:-7d}
       UPLOAD_KEY: ${UPLOAD_KEY:?set UPLOAD_KEY}
 
-      MINIO_ENDPOINT: minio
+      MINIO_ENDPOINT: schoolbase-minio
       MINIO_PORT: "9000"
       MINIO_USE_SSL: "false"
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}

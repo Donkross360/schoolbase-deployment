@@ -23,8 +23,8 @@ container traffic stays on the private `schoolbase-shared` Docker network.
 Browser -> frontend domain -> app:3000
 Browser or external client -> API domain -> app:3008
 Next.js server and API proxy -> 127.0.0.1:3008
-NestJS backend -> postgres:5432
-NestJS backend -> minio:9000
+NestJS backend -> schoolbase-postgres:5432
+NestJS backend -> schoolbase-minio:9000
 ```
 
 PostgreSQL port `5432`, MinIO API port `9000`, and MinIO console port `9001`
@@ -127,4 +127,3 @@ Before the reusable image is production-ready:
 5. Disable the database-setup endpoint in provisioned production deployments.
 6. Remove request bodies, authorization data, cookies, and tokens from proxy
    logs.
-

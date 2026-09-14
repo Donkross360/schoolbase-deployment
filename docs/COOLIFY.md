@@ -183,3 +183,7 @@ setting for managed proxy routing; do not reproduce that destination network in
 the school Compose file. Keep Raw Compose Deployment disabled. If Coolify
 reports that the shared network is missing, deploy the infrastructure resource
 first rather than creating another network with a different name.
+
+School containers reach the shared services through the unique aliases
+`schoolbase-postgres` and `schoolbase-minio`. These names avoid collisions with
+generic service names on other Coolify networks attached to the same container.
