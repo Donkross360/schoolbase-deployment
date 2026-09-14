@@ -6,9 +6,11 @@ The frontend and backend application corrections must first be committed to
 their `feat/runtime-templating` branches.
 
 In the deployment repository, run the **Build SchoolBase image** GitHub Actions
-workflow. Select the exact frontend and backend refs. The workflow publishes a
-GHCR tag containing both resolved commit SHAs. Record the complete image name;
-do not replace it with `latest`.
+workflow. Select the exact frontend and backend refs. The workflow starts the
+combined image with temporary PostgreSQL and MinIO services and verifies the
+Demo frontend, backend readiness endpoint, and runtime school name. After the
+smoke test passes, it publishes a GHCR tag containing both resolved commit SHAs.
+Record the complete image name; do not replace it with `latest`.
 
 If the GHCR package is private, add read-only GHCR credentials to Coolify before
 creating school resources.
@@ -135,4 +137,3 @@ network. Do not enable Raw Compose Deployment. Coolify must remain responsible
 for adding proxy routing and joining its proxy to public services. If Coolify
 reports that the external network is missing, deploy the infrastructure resource
 first rather than creating another network with a different name.
-
