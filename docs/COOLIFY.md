@@ -86,20 +86,30 @@ Rerunning provisioning keeps existing data and credentials. If supplied
 credentials do not match an existing role or user, verification fails instead
 of changing the credential silently.
 
-## 5. Restore the databases
+## 5. Restore the databases without server SSH
 
-Provision both schools before restoring. Make the two backup files available on
-the server, then load the matching administrator and school variables and run:
+Set `RESTORE_MINIO_ACCESS_KEY` and `RESTORE_MINIO_SECRET_KEY` on the
+infrastructure resource, reload Compose, and redeploy. The transfer bucket is
+private and its credentials are separate from each application's credentials.
 
-```bash
-DB_NAME=sb_demo DB_USER=sb_demo_app ./scripts/restore-school.sh /path/to/sb_demo.sql.gz
-DB_NAME=sb_stpaul DB_USER=sb_stpaul_app ./scripts/restore-school.sh /path/to/sb_stpaul.sql.gz
+For Demo, create a MinIO Scheduled Task using container `minio` and command:
+
+```text
+/bin/sh /opt/schoolbase/prepare-database-import.sh demo
 ```
 
-The script validates gzip integrity and refuses to restore into a database that
-already contains public tables. It changes object ownership from the dump's old
-`postgres` owner to the restricted school role and verifies the restored table
-count.
+Execute it and copy the one-hour `curl` upload command from its output. Run that
+command locally from the directory containing `sb_demo.sql.gz`. After the upload
+finishes, create a PostgreSQL task using container `postgres` and command:
+
+```text
+/bin/sh /opt/schoolbase/restore-postgres.sh demo
+```
+
+Execute the restore task. It validates gzip integrity, refuses a populated
+database, changes object ownership from `postgres` to `sb_demo_app`, verifies at
+least 59 tables, and deletes the transfer object after success. Use `stpaul` in
+both commands for the St Paul backup.
 
 ## 6. Deploy Demo
 

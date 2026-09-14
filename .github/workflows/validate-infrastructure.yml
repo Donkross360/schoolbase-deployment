@@ -10,6 +10,8 @@ on:
       - .dockerignore
       - scripts/provision-postgres.sh
       - scripts/provision-minio.sh
+      - scripts/prepare-database-import.sh
+      - scripts/restore-postgres.sh
       - .github/workflows/validate-infrastructure.yml
   pull_request:
     paths:
@@ -19,6 +21,8 @@ on:
       - .dockerignore
       - scripts/provision-postgres.sh
       - scripts/provision-minio.sh
+      - scripts/prepare-database-import.sh
+      - scripts/restore-postgres.sh
       - .github/workflows/validate-infrastructure.yml
   workflow_dispatch:
 
@@ -38,6 +42,8 @@ jobs:
       MINIO_ROOT_PASSWORD: ci-minio-root-password
       DEMO_MINIO_SECRET_KEY: ci-demo-minio-secret-key
       STPAUL_MINIO_SECRET_KEY: ci-stpaul-minio-secret-key
+      RESTORE_MINIO_SECRET_KEY: ci-restore-minio-secret-key
+      EXPECTED_TABLE_COUNT: 1
     steps:
       - uses: actions/checkout@v5
 
@@ -55,6 +61,39 @@ jobs:
             docker compose -f compose.infrastructure.yml exec -T minio \
               /bin/sh /opt/schoolbase/provision-minio.sh "$school"
           done
+
+      - name: Restore a private transfer and remove it
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T postgres \
+            createdb -U "$POSTGRES_ADMIN_USER" restore_source
+          docker compose -f compose.infrastructure.yml exec -T postgres \
+            psql -U "$POSTGRES_ADMIN_USER" -d restore_source \
+              -c 'CREATE TABLE restore_probe (id integer PRIMARY KEY); INSERT INTO restore_probe VALUES (1);'
+          docker compose -f compose.infrastructure.yml exec -T postgres \
+            pg_dump -U "$POSTGRES_ADMIN_USER" restore_source \
+            | gzip > /tmp/sb_demo.sql.gz
+          docker compose -f compose.infrastructure.yml cp \
+            /tmp/sb_demo.sql.gz minio:/tmp/sb_demo.sql.gz
+          docker compose -f compose.infrastructure.yml exec -T minio \
+            /bin/sh /opt/schoolbase/prepare-database-import.sh demo
+          docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
+            mc alias set root http://127.0.0.1:9000 \
+              "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+            mc cp /tmp/sb_demo.sql.gz root/schoolbase-imports/sb_demo.sql.gz >/dev/null
+          '
+          docker compose -f compose.infrastructure.yml exec -T postgres \
+            /bin/sh /opt/schoolbase/restore-postgres.sh demo
+          docker compose -f compose.infrastructure.yml exec -T postgres \
+            psql -U "$POSTGRES_ADMIN_USER" -d sb_demo -Atqc \
+              'SELECT count(*) FROM restore_probe' | grep -qx 1
+          if docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
+            mc alias set root http://127.0.0.1:9000 \
+              "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+            mc stat root/schoolbase-imports/sb_demo.sql.gz
+          '; then
+            echo 'Restore transfer was not deleted.' >&2
+            exit 1
+          fi
 
       - name: Verify database isolation
         run: |

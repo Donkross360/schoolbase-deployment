@@ -7,6 +7,8 @@ nginx
 scripts/*
 !scripts/provision-postgres.sh
 !scripts/provision-minio.sh
+!scripts/restore-postgres.sh
+!scripts/prepare-database-import.sh
 SchoolBase-FE/.git
 SchoolBase-FE/.next
 SchoolBase-FE/node_modules

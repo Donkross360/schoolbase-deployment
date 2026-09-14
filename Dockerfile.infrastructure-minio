@@ -1,3 +1,4 @@
 FROM quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 
 COPY --chmod=0555 scripts/provision-minio.sh /opt/schoolbase/provision-minio.sh
+COPY --chmod=0555 scripts/prepare-database-import.sh /opt/schoolbase/prepare-database-import.sh

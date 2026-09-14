@@ -1,3 +1,7 @@
+FROM quay.io/minio/mc:RELEASE.2025-07-16T15-35-03Z AS minio-client
+
 FROM postgres:16.15-alpine
 
+COPY --from=minio-client /usr/bin/mc /usr/local/bin/mc
 COPY --chmod=0555 scripts/provision-postgres.sh /opt/schoolbase/provision-postgres.sh
+COPY --chmod=0555 scripts/restore-postgres.sh /opt/schoolbase/restore-postgres.sh
