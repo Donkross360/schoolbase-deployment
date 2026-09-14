@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:16.15-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.infrastructure-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_ADMIN_USER:?set POSTGRES_ADMIN_USER}
@@ -14,10 +16,6 @@ services:
       - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    configs:
-      - source: provision_postgres
-        target: /opt/schoolbase/provision-postgres.sh
-        mode: 0555
     networks:
       schoolbase_shared:
         aliases:
@@ -38,7 +36,9 @@ services:
         max-file: "5"
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    build:
+      context: .
+      dockerfile: Dockerfile.infrastructure-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -54,10 +54,6 @@ services:
       - "9001"
     volumes:
       - minio_data:/data
-    configs:
-      - source: provision_minio
-        target: /opt/schoolbase/provision-minio.sh
-        mode: 0555
     networks:
       schoolbase_shared:
         aliases:
@@ -87,9 +83,3 @@ networks:
   schoolbase_shared:
     name: schoolbase-shared
     driver: bridge
-
-configs:
-  provision_postgres:
-    file: ./scripts/provision-postgres.sh
-  provision_minio:
-    file: ./scripts/provision-minio.sh

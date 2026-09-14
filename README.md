@@ -10,6 +10,7 @@ secrets, resource limits, and frontend/API domains.
 | Path | Purpose |
 | --- | --- |
 | `compose.infrastructure.yml` | Shared PostgreSQL and MinIO stack |
+| `Dockerfile.infrastructure-*` | Adds Coolify provisioning commands to the shared service images |
 | `compose.school.yml` | Reusable application definition; create one Coolify resource per school |
 | `Dockerfile.combined` | Builds the combined Next.js and NestJS image |
 | `.github/workflows/build-image.yml` | Builds and publishes an immutable GHCR image |

@@ -1,0 +1,3 @@
+FROM postgres:16.15-alpine
+
+COPY --chmod=0555 scripts/provision-postgres.sh /opt/schoolbase/provision-postgres.sh

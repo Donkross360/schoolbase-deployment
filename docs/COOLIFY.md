@@ -53,8 +53,8 @@ network `schoolbase-shared` and volumes `schoolbase-postgres-data` and
 
 Add all variables from `config/infrastructure.env.example` to the infrastructure
 resource in Coolify, then reload the Compose file and redeploy. Keep passwords
-and secret keys marked as secrets. The Compose file mounts provisioning scripts
-inside the PostgreSQL and MinIO containers.
+and secret keys marked as secrets. The infrastructure images contain the
+provisioning scripts inside the PostgreSQL and MinIO containers.
 
 In the infrastructure resource, open **Scheduled Tasks** and create these four
 tasks. Select the listed service/container and use the exact command. The cron

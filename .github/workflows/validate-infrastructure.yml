@@ -5,12 +5,16 @@ on:
     branches: [main]
     paths:
       - compose.infrastructure.yml
+      - Dockerfile.infrastructure-postgres
+      - Dockerfile.infrastructure-minio
       - scripts/provision-postgres.sh
       - scripts/provision-minio.sh
       - .github/workflows/validate-infrastructure.yml
   pull_request:
     paths:
       - compose.infrastructure.yml
+      - Dockerfile.infrastructure-postgres
+      - Dockerfile.infrastructure-minio
       - scripts/provision-postgres.sh
       - scripts/provision-minio.sh
       - .github/workflows/validate-infrastructure.yml
