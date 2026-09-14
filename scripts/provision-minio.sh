@@ -2,6 +2,12 @@
 set -eu
 
 school=${1:-}
+mode=${2:-ensure}
+
+case "$mode" in
+  ensure|rotate) ;;
+  *) echo "Usage: $0 demo|stpaul [ensure|rotate]" >&2; exit 2 ;;
+esac
 
 case "$school" in
   demo)
@@ -48,6 +54,8 @@ policy_name=school-$bucket
 mc admin policy create "$alias_name" "$policy_name" "$policy_file" >/dev/null
 if ! mc admin user info "$alias_name" "$access_key" >/dev/null 2>&1; then
   mc admin user add "$alias_name" "$access_key" "$secret_key" >/dev/null
+elif [ "$mode" = rotate ]; then
+  mc admin user add "$alias_name" "$access_key" "$secret_key" >/dev/null
 fi
 mc admin policy attach "$alias_name" "$policy_name" --user "$access_key" >/dev/null
 
@@ -60,4 +68,4 @@ fi
 mc alias set schoolbase-check http://127.0.0.1:9000 "$access_key" "$secret_key" >/dev/null
 mc ls "schoolbase-check/$bucket" >/dev/null
 
-echo "MinIO resources for $school are ready."
+echo "MinIO resources for $school are ready ($mode mode)."

@@ -124,6 +124,42 @@ jobs:
             mc rm demo-check/demo/isolation-check >/dev/null
           '
 
+      - name: Verify explicit credential rotation
+        env:
+          ROTATED_DB_PASSWORD: ci-rotated-demo-database-password
+          ROTATED_MINIO_SECRET: ci-rotated-demo-minio-secret-key
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T \
+            -e DEMO_DB_PASSWORD="$ROTATED_DB_PASSWORD" postgres \
+            /bin/sh /opt/schoolbase/provision-postgres.sh demo rotate
+          if docker compose -f compose.infrastructure.yml exec -T \
+            -e PGPASSWORD="$DEMO_DB_PASSWORD" postgres \
+            psql -h 127.0.0.1 -U sb_demo_app -d sb_demo -c 'SELECT 1'; then
+            echo 'Old Demo database password still works after rotation.' >&2
+            exit 1
+          fi
+          docker compose -f compose.infrastructure.yml exec -T \
+            -e PGPASSWORD="$ROTATED_DB_PASSWORD" postgres \
+            psql -h 127.0.0.1 -U sb_demo_app -d sb_demo -c 'SELECT 1' >/dev/null
+
+          docker compose -f compose.infrastructure.yml exec -T \
+            -e DEMO_MINIO_SECRET_KEY="$ROTATED_MINIO_SECRET" minio \
+            /bin/sh /opt/schoolbase/provision-minio.sh demo rotate
+          if docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
+            mc alias set old-demo http://127.0.0.1:9000 \
+              "$DEMO_MINIO_ACCESS_KEY" "$DEMO_MINIO_SECRET_KEY" >/dev/null
+            mc ls old-demo/demo
+          '; then
+            echo 'Old Demo MinIO secret still works after rotation.' >&2
+            exit 1
+          fi
+          docker compose -f compose.infrastructure.yml exec -T \
+            -e DEMO_MINIO_SECRET_KEY="$ROTATED_MINIO_SECRET" minio /bin/sh -euc '
+              mc alias set rotated-demo http://127.0.0.1:9000 \
+                "$DEMO_MINIO_ACCESS_KEY" "$DEMO_MINIO_SECRET_KEY" >/dev/null
+              mc ls rotated-demo/demo >/dev/null
+            '
+
       - name: Show service logs after failure
         if: failure()
         run: docker compose -f compose.infrastructure.yml logs

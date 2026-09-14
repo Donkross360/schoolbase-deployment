@@ -89,6 +89,18 @@ Rerunning provisioning keeps existing data and credentials. If supplied
 credentials do not match an existing role or user, verification fails instead
 of changing the credential silently.
 
+If a configured school credential was a placeholder or must be rotated, replace
+the value on the infrastructure resource, redeploy, and execute the matching
+tasks once with an explicit `rotate` argument:
+
+```text
+/bin/sh /opt/schoolbase/provision-postgres.sh demo rotate
+/bin/sh /opt/schoolbase/provision-minio.sh demo rotate
+```
+
+Rotation changes only the selected role password and MinIO user secret. It
+leaves the database contents, bucket objects, and access policy intact.
+
 ## 5. Restore the databases without server SSH
 
 Set `RESTORE_MINIO_ACCESS_KEY` and `RESTORE_MINIO_SECRET_KEY` on the
