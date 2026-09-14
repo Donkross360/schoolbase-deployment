@@ -131,7 +131,9 @@ https://api.demo.schoolbase.africa:3008
 
 The public request still uses HTTPS port `443`; the suffix tells Coolify which
 internal container port to target. The Compose file joins the existing
-`schoolbase-shared` network and does not publish either application port.
+`schoolbase-shared` network for PostgreSQL and MinIO access and the external
+`coolify` network for public routing. It does not publish either application
+port. The Traefik network label ensures both public routes use `coolify`.
 
 Deploy Demo and run:
 
@@ -160,7 +162,7 @@ remains available during the St Paul deployment.
 ## 8. Coolify networking setting
 
 The Compose definitions explicitly use the external `schoolbase-shared`
-network. Do not enable Raw Compose Deployment. Coolify must remain responsible
-for adding proxy routing and joining its proxy to public services. If Coolify
-reports that the external network is missing, deploy the infrastructure resource
-first rather than creating another network with a different name.
+network, and public services also use the external `coolify` proxy network. Do
+not enable Raw Compose Deployment. If Coolify reports that the shared network
+is missing, deploy the infrastructure resource first rather than creating
+another network with a different name.

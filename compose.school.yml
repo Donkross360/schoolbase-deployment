@@ -3,6 +3,8 @@ services:
     image: ${SCHOOLBASE_IMAGE:?set SCHOOLBASE_IMAGE to an immutable image tag}
     pull_policy: always
     restart: unless-stopped
+    labels:
+      traefik.docker.network: coolify
     environment:
       NODE_ENV: production
       PORT: "3008"
@@ -63,6 +65,7 @@ services:
       schoolbase_shared:
         aliases:
           - schoolbase-${APP_SLUG:?set APP_SLUG}
+      coolify: {}
     healthcheck:
       test:
         - CMD-SHELL
@@ -87,4 +90,5 @@ networks:
   schoolbase_shared:
     name: schoolbase-shared
     external: true
-
+  coolify:
+    external: true
