@@ -63,7 +63,7 @@ docker run --detach \
   --network-alias minio \
   --env "MINIO_ROOT_USER=${minio_user}" \
   --env "MINIO_ROOT_PASSWORD=${minio_password}" \
-  minio/minio:RELEASE.2025-09-07T16-13-09Z \
+  quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z \
   server /data --console-address :9001 >/dev/null
 
 wait_for_command PostgreSQL \
