@@ -43,7 +43,8 @@ Create one Git-based Docker Compose resource in Coolify:
 
 Configure only `https://files.schoolbase.africa:9000` as a MinIO domain. Do not
 assign a domain to PostgreSQL or the MinIO console on port `9001`. Do not add
-host port mappings.
+host port mappings. MinIO joins Coolify's external `coolify` network for proxy
+routing and the private `schoolbase-shared` network for application traffic.
 
 Deploy and wait for PostgreSQL and MinIO to become healthy. Confirm that Docker
 network `schoolbase-shared` and volumes `schoolbase-postgres-data` and

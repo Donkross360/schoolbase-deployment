@@ -64,6 +64,7 @@ services:
       schoolbase_shared:
         aliases:
           - minio
+      coolify: {}
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 20s
@@ -89,3 +90,5 @@ networks:
   schoolbase_shared:
     name: schoolbase-shared
     driver: bridge
+  coolify:
+    external: true

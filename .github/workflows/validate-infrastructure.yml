@@ -52,7 +52,9 @@ jobs:
         run: docker compose -f compose.infrastructure.yml config --quiet
 
       - name: Start shared services
-        run: docker compose -f compose.infrastructure.yml up -d --wait
+        run: |
+          docker network create coolify
+          docker compose -f compose.infrastructure.yml up -d --wait
 
       - name: Provision both schools twice
         run: |
