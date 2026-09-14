@@ -4,7 +4,9 @@
 .env.*
 docs
 nginx
-scripts
+scripts/*
+!scripts/provision-postgres.sh
+!scripts/provision-minio.sh
 SchoolBase-FE/.git
 SchoolBase-FE/.next
 SchoolBase-FE/node_modules
@@ -13,4 +15,3 @@ SchoolBase-BE/dist
 SchoolBase-BE/node_modules
 *.sql
 *.sql.gz
-

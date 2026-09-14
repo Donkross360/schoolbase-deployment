@@ -7,6 +7,7 @@ on:
       - compose.infrastructure.yml
       - Dockerfile.infrastructure-postgres
       - Dockerfile.infrastructure-minio
+      - .dockerignore
       - scripts/provision-postgres.sh
       - scripts/provision-minio.sh
       - .github/workflows/validate-infrastructure.yml
@@ -15,6 +16,7 @@ on:
       - compose.infrastructure.yml
       - Dockerfile.infrastructure-postgres
       - Dockerfile.infrastructure-minio
+      - .dockerignore
       - scripts/provision-postgres.sh
       - scripts/provision-minio.sh
       - .github/workflows/validate-infrastructure.yml
