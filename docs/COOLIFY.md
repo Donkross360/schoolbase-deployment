@@ -166,6 +166,11 @@ In **Settings > Public Website**, confirm that the restored website layout is
 selected. Demo's restored value is **One-page website**. Switching to
 **Multi-page website** changes the public root to `/site` and uses the saved
 multi-page content; switching back keeps that content available for later.
+While Multi-page is selected, edit one item on each page type, save once, and
+open **Preview published site**. Confirm the navigation visibility, Home
+facility images, programs, galleries, news, and Contact images match the saved
+values. Switch back to One-page and confirm its images and testimonials remain
+unchanged.
 
 ## 7. Deploy St Paul
 

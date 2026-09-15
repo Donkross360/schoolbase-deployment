@@ -89,6 +89,13 @@ preserve both one-page and multi-page content so a school can switch back
 without rebuilding the image or re-entering information. The public `/` route
 reads the school record and redirects to `/landing` or `/site` accordingly.
 
+Administrators edit the selected layout under **Settings > Public Website**.
+The multi-page editor must support page visibility and every field in the
+stored configuration: Home images and facility highlights, page banners,
+academic programs, facility and gallery images, news posts, and the Contact
+image. Saving multi-page content must not change the selected layout or modify
+the separately stored one-page content.
+
 This setting must never be baked into `SCHOOLBASE_IMAGE`: Demo and St Paul use
 the same immutable image while keeping independent layouts and content in their
 separate databases.
