@@ -111,11 +111,12 @@ the registration number resolves to the student record's linked user account.
 Inactive users and deleted student records must remain unable to authenticate.
 
 The admin results review loads all available submission pages and groups them
-by academic stream, then class. Stream cards summarize students, classes,
-submission counts, and review status. Class cards summarize students, subjects,
-submission counts, and review status before the administrator opens the
-existing subject/teacher submission cards. The UI's **Pending** filter maps to
-the backend `SUBMITTED` status.
+by academic stream, then class, then subject. Stream cards summarize students,
+classes, submission counts, and review status. Class cards summarize students,
+subjects, submission counts, and review status. Subject cards summarize
+students, teachers, submissions, and review status before the administrator
+opens the existing teacher/term submission cards. The UI's **Pending** filter
+maps to the backend `SUBMITTED` status.
 
 ## Build-time variables
 
