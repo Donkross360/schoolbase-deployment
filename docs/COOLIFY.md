@@ -159,18 +159,21 @@ API_PUBLIC_URL=https://api.demo.schoolbase.africa \
 ./scripts/verify-school.sh
 ```
 
-Verify login, restored records, a new image upload, and the resulting
-`files.schoolbase.africa/demo/...` URL before continuing.
+Verify administrator email login and student login with a registration number,
+restored records, a new image upload, and the resulting
+`files.schoolbase.africa/demo/...` URL before continuing. In **Admin >
+Results**, confirm submissions first appear by stream, then by class, and that
+the Pending filter returns submitted results awaiting review.
 
 In **Settings > Public Website**, confirm that the restored website layout is
 selected. Demo's restored value is **One-page website**. Switching to
 **Multi-page website** changes the public root to `/site` and uses the saved
 multi-page content; switching back keeps that content available for later.
-While Multi-page is selected, edit one item on each page type, save once, and
-open **Preview published site**. Confirm the navigation visibility, Home
-facility images, programs, galleries, news, and Contact images match the saved
-values. Switch back to One-page and confirm its images and testimonials remain
-unchanged.
+While Multi-page is selected, edit navigation labels and page text, upload or
+replace an image, and edit one repeatable item. Save once and open **Preview
+published site**. Confirm page visibility, wording, Home facility images,
+programs, galleries, news, and Contact images match the saved values. Switch
+back to One-page and confirm its images and testimonials remain unchanged.
 
 ## 7. Deploy St Paul
 

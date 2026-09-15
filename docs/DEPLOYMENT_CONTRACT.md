@@ -90,15 +90,32 @@ without rebuilding the image or re-entering information. The public `/` route
 reads the school record and redirects to `/landing` or `/site` accordingly.
 
 Administrators edit the selected layout under **Settings > Public Website**.
-The multi-page editor must support page visibility and every field in the
-stored configuration: Home images and facility highlights, page banners,
+The multi-page editor supports page visibility, navigation labels, page
+headings and introductions, Home images and facility highlights, page banners,
 academic programs, facility and gallery images, news posts, and the Contact
-image. Saving multi-page content must not change the selected layout or modify
-the separately stored one-page content.
+image. Repeatable content is edited one item at a time, and image fields use the
+same upload, preview, crop, replace, and remove flow as the one-page editor.
+Saving multi-page content must not change the selected layout or modify the
+separately stored one-page content. Empty optional text fields retain the
+existing default wording.
 
 This setting must never be baked into `SCHOOLBASE_IMAGE`: Demo and St Paul use
 the same immutable image while keeping independent layouts and content in their
 separate databases.
+
+## Portal access and results contract
+
+The login identifier accepts either a user's email address or a student's
+registration number. Both identifiers use the same password and session flow;
+the registration number resolves to the student record's linked user account.
+Inactive users and deleted student records must remain unable to authenticate.
+
+The admin results review loads all available submission pages and groups them
+by academic stream, then class. Stream cards summarize students, classes,
+submission counts, and review status. Class cards summarize students, subjects,
+submission counts, and review status before the administrator opens the
+existing subject/teacher submission cards. The UI's **Pending** filter maps to
+the backend `SUBMITTED` status.
 
 ## Build-time variables
 
