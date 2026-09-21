@@ -36,9 +36,10 @@ In the same Coolify project and environment, create a PostgreSQL resource. Use
 a generated password and create a database and role dedicated to this website,
 for example `schoolbase_website`. Do not expose port `5432` publicly.
 
-Record the private hostname, port, database, username, and password shown by
-Coolify. Both the database and API resource must be connected to the same
-Coolify network.
+Record the private hostname, port, **Initial Database**, username, and password
+shown by Coolify. `DB_NAME` must exactly match that Initial Database (commonly
+`postgres` unless it was changed during creation). Both the database and API
+resource must be connected to the same Coolify network.
 
 ## 3. Deploy the API
 
@@ -70,7 +71,7 @@ FRONTEND_URL=https://schoolbase.africa
 CORS_ORIGINS=https://schoolbase.africa,https://www.schoolbase.africa
 DB_HOST=<Coolify private PostgreSQL hostname>
 DB_PORT=5432
-DB_NAME=schoolbase_website
+DB_NAME=<Coolify Initial Database, for example postgres>
 DB_USER=<website database user>
 DB_PASS=<generated database password>
 DB_SSL=false
