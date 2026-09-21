@@ -10,6 +10,10 @@ stack. Deploy it as three resources in one Coolify project:
 Keeping the frontend and API separate lets either service deploy without taking
 the other one down. PostgreSQL must stay private and must not have a public port.
 
+For the initial deployment, both Coolify applications track the `dev` branch.
+They still run with `NODE_ENV=production`; the Git branch does not control the
+runtime mode.
+
 ## 1. Choose the domains
 
 Use one public hostname for the site and one for the API. For example:
@@ -38,7 +42,7 @@ Create a Git-based application with these settings:
 
 ```text
 Repository: schoolbaseafrica/SchoolBase-Website-BE
-Branch: main
+Branch: dev
 Build pack: Dockerfile
 Dockerfile location: /Dockerfile
 Port: 3008
