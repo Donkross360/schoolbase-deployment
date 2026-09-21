@@ -14,6 +14,10 @@ For the initial deployment, both Coolify applications track the `dev` branch.
 They still run with `NODE_ENV=production`; the Git branch does not control the
 runtime mode.
 
+Both source repositories are public. In Coolify, choose **Public Repository**;
+no GitHub App, deploy key, or organization installation is required. Automatic
+deployments can be added later with a repository webhook.
+
 ## 1. Choose the domains
 
 Use one public hostname for the site and one for the API. For example:
@@ -41,7 +45,8 @@ Coolify network.
 Create a Git-based application with these settings:
 
 ```text
-Repository: schoolbaseafrica/SchoolBase-Website-BE
+Source type: Public Repository
+Repository: https://github.com/schoolbaseafrica/SchoolBase-Website-BE.git
 Branch: dev
 Build pack: Dockerfile
 Dockerfile location: /Dockerfile
@@ -93,7 +98,8 @@ The response is wrapped by the API response interceptor and includes a healthy
 Create another Git-based application:
 
 ```text
-Repository: schoolbaseafrica/SchoolBase-Website-FE
+Source type: Public Repository
+Repository: https://github.com/schoolbaseafrica/SchoolBase-Website-FE.git
 Branch: dev
 Build pack: Dockerfile
 Dockerfile location: /Dockerfile
