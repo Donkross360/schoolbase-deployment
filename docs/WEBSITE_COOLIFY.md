@@ -51,12 +51,14 @@ Branch: dev
 Build pack: Dockerfile
 Dockerfile location: /Dockerfile
 Port: 3008
-Domain: https://api.schoolbase.africa:3008
+Domain: https://api.schoolbase.africa
 Health path: /api/v1/health
 ```
 
 Add these runtime variables. Replace example values and keep database and mail
-credentials marked as secrets:
+credentials marked as secrets. Enable **Available at Runtime** and disable
+**Available at Buildtime** for every variable below; this Dockerfile does not
+need build-time environment variables.
 
 ```dotenv
 NODE_ENV=production
@@ -104,7 +106,7 @@ Branch: dev
 Build pack: Dockerfile
 Dockerfile location: /Dockerfile
 Port: 3000
-Domain: https://schoolbase.africa:3000
+Domain: https://schoolbase.africa
 ```
 
 Set this runtime variable:
@@ -115,8 +117,9 @@ API_BASE_URL=https://api.schoolbase.africa/api/v1
 
 `API_BASE_URL` is intentionally server-only. Contact and waitlist forms call the
 same-origin `/api/proxy-auth/*` route, and Next.js forwards them to this value at
-runtime. Do not add a build-time `NEXT_PUBLIC_API_BASE_URL` unless a browser-only
-feature explicitly needs to bypass that proxy.
+runtime. Enable **Available at Runtime** and disable **Available at Buildtime**.
+Do not add a build-time `NEXT_PUBLIC_API_BASE_URL` unless a browser-only feature
+explicitly needs to bypass that proxy.
 
 Deploy the frontend after the API health check succeeds.
 
