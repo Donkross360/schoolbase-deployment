@@ -30,6 +30,12 @@ Submitted attempts enter one of two states: automatically marked or pending manu
 
 A result with unresolved manual responses cannot be released. Saving a new mark withdraws any earlier release until the updated result is reviewed and published again. Students and public candidates see scores immediately only when the examination explicitly enables immediate results; otherwise they see the score after an administrator publishes that attempt result. Answer keys remain restricted to the management review screen.
 
+## Examination authoring
+
+Draft examinations can be divided into ordered sections with their own instructions. Questions retain the selected section when the attempt is created, allowing the student and public candidate interfaces to show the current section while keeping one continuous autosaved attempt.
+
+The question bank stores independent copies rather than links to questions in an examination. An administrator can save a draft question to the bank, search the bank by question text or topic, and copy a bank question into another draft and section. Editing either copy cannot silently change an existing paper. Answer keys and explanations are returned only by authenticated management endpoints.
+
 ## Examination navigation and entrance tests
 
 The portal groups assessment tools under a **CBT** drawer:
