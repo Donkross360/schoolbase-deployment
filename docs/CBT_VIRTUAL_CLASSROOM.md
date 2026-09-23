@@ -24,6 +24,12 @@ CBT does not depend on the real-time classroom services. A media outage must nev
 
 The migration extends the restored `cbt_*` tables instead of replacing them, preserving legacy attempts and answers.
 
+## Result lifecycle
+
+Submitted attempts enter one of two states: automatically marked or pending manual marking. Administrators review the complete attempt, award marks for subjective responses, leave an internal marker comment and inspect the connection and visibility event timeline. Every saved manual mark records the marker and time in attempt metadata and recalculates the total score.
+
+A result with unresolved manual responses cannot be released. Saving a new mark withdraws any earlier release until the updated result is reviewed and published again. Students and public candidates see scores immediately only when the examination explicitly enables immediate results; otherwise they see the score after an administrator publishes that attempt result. Answer keys remain restricted to the management review screen.
+
 ## Examination navigation and entrance tests
 
 The portal groups assessment tools under a **CBT** drawer:
