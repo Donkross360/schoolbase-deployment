@@ -50,7 +50,11 @@ Proctoring is configured per examination. The current recorded mode captures con
 
 ## Academic-period visibility
 
-Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts and timetable summaries must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
+Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts, class rosters, attendance, timetables, CBT examinations and CBT applicants must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
+
+Academic-period selection is page scoped. Changing the period on Results must not change Fees, Attendance, Timetable, CBT or Dashboard. A list and its direct detail screen may share a scope when they represent one workflow, such as CBT Applicants and Applicant Details. Admin, teacher, student and parent portals each expose the selector on period-sensitive pages; pages containing global records do not show a misleading selector.
+
+Class-based pages select a session because class enrollment and teacher assignment belong to a session. Monthly attendance selects a session and an explicit month. Term-based results select a session and term. When a session changes, a class selected in the previous session must be discarded if it is not part of the new session.
 
 Fees have an explicit scope:
 
@@ -58,7 +62,7 @@ Fees have an explicit scope:
 - A session-wide fee applies throughout its session and also appears in each term view for that session.
 - A whole-session summary includes session-wide fees and all term fees in that session.
 
-The dashboard displays the active session and term beside its summaries so the scope is visible.
+The dashboard displays its selected session and term beside its summaries so the scope is visible. Its selection remains independent from every other page.
 
 ## Classroom boundaries
 
