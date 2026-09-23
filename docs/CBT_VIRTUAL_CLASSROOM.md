@@ -121,6 +121,8 @@ Proctoring is configured per examination with explicit modes: no monitoring, bro
 
 The examination management screen is also the first monitoring workspace. It refreshes active attempts without a page reload and shows completion, marking and publication counts, answered-question progress, connection interruptions and page-exit events. These signals are review aids rather than automatic proof of misconduct. Candidate names work for both enrolled students and public applicants.
 
+The examination management screen is also the first monitoring workspace. It refreshes active attempts without a page reload and shows completion, marking and publication counts, answered-question progress, connection interruptions and page-exit events. These signals are review aids rather than automatic proof of misconduct. Candidate names work for both enrolled students and public applicants.
+
 ## Academic-period visibility
 
 Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts, class rosters, attendance, timetables, CBT examinations and CBT applicants must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
