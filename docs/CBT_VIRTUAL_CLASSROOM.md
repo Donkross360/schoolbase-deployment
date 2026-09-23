@@ -60,6 +60,8 @@ Applicant records and attempts remain available after admission for audit purpos
 
 Proctoring is configured per examination. The current recorded mode captures connection and page-visibility events for review; it does not claim to record a camera or microphone. Human monitoring can be added to the teacher and administrator views without changing candidate identity or scoring.
 
+The examination management screen is also the first monitoring workspace. It refreshes active attempts without a page reload and shows completion, marking and publication counts, answered-question progress, connection interruptions and page-exit events. These signals are review aids rather than automatic proof of misconduct. Candidate names work for both enrolled students and public applicants.
+
 ## Academic-period visibility
 
 Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts, class rosters, attendance, timetables, CBT examinations and CBT applicants must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
@@ -77,6 +79,10 @@ Fees have an explicit scope:
 - A whole-session summary includes session-wide fees and all term fees in that session.
 
 The dashboard displays its selected session and term beside its summaries so the scope is visible. Its selection remains independent from every other page.
+
+Headline population cards are school-wide: all active students, teachers and parents remain counted even while they are awaiting a class assignment for the selected session. Session-sensitive cards and charts, including classes, enrollment growth, fees and activity, continue to use the selected academic period. Enrollment growth counts active class enrollments only.
+
+Expected fees are assignment based. Each active fee is multiplied by the distinct active students reached through its assigned classes or direct student assignments. A student reached through both paths is counted once for that fee. Paid and outstanding totals use the same selected session and term, and currency is displayed at its real scale rather than rounding small amounts to zero millions.
 
 ## Classroom boundaries
 
