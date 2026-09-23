@@ -34,6 +34,18 @@ The portal groups assessment tools under a **CBT** drawer:
 
 External candidates select a published examination on the public `/cbt` page and provide their name and email before starting. The email reuses the candidate's existing profile for that intake. Passing an examination lets an administrator start student onboarding with one action. Public attempt access uses a separate expiring token and never exposes answer keys.
 
+The Applicants page is part of the CBT workflow, rather than an optional reporting screen. It must provide:
+
+- a searchable, filterable list with applicant, intake, latest examination, attempt state, best percentage and admission state;
+- summary counts for total applicants, passed applicants, attempts in progress and admitted applicants;
+- an applicant detail view containing contact details and complete attempt history;
+- a clear distinction between automatically scored attempts and attempts awaiting manual grading;
+- admission eligibility based on a completed passing attempt, with manual grading completed where required;
+- an idempotent admission action that reports whether it created a student, linked an existing student or sent an onboarding invitation; and
+- explicit loading, empty, failure and retry states so an API failure is never presented as an empty applicant list.
+
+Applicant records and attempts remain available after admission for audit purposes. Admission does not delete or rewrite the original external examination result.
+
 Proctoring is configured per examination. The current recorded mode captures connection and page-visibility events for review; it does not claim to record a camera or microphone. Human monitoring can be added to the teacher and administrator views without changing candidate identity or scoring.
 
 ## Academic-period visibility
