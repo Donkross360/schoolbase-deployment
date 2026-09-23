@@ -24,6 +24,30 @@ CBT does not depend on the real-time classroom services. A media outage must nev
 
 The migration extends the restored `cbt_*` tables instead of replacing them, preserving legacy attempts and answers.
 
+## Examination navigation and entrance tests
+
+The portal groups assessment tools under a **CBT** drawer:
+
+- Internal Exams contains class-assigned school examinations.
+- External Exams contains public entrance and recruitment-style tests.
+- Applicants contains the candidate profile, attempts, score and admission action.
+
+External candidates select a published examination on the public `/cbt` page and provide their name and email before starting. The email reuses the candidate's existing profile for that intake. Passing an examination lets an administrator start student onboarding with one action. Public attempt access uses a separate expiring token and never exposes answer keys.
+
+Proctoring is configured per examination. The current recorded mode captures connection and page-visibility events for review; it does not claim to record a camera or microphone. Human monitoring can be added to the teacher and administrator views without changing candidate identity or scoring.
+
+## Academic-period visibility
+
+Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts and timetable summaries must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
+
+Fees have an explicit scope:
+
+- A term fee appears for its term.
+- A session-wide fee applies throughout its session and also appears in each term view for that session.
+- A whole-session summary includes session-wide fees and all term fees in that session.
+
+The dashboard displays the active session and term beside its summaries so the scope is visible.
+
 ## Classroom boundaries
 
 The classroom will use three independent channels:
