@@ -24,6 +24,18 @@ CBT does not depend on the real-time classroom services. A media outage must nev
 
 The migration extends the restored `cbt_*` tables instead of replacing them, preserving legacy attempts and answers.
 
+## Result lifecycle
+
+Submitted attempts enter one of two states: automatically marked or pending manual marking. Administrators review the complete attempt, award marks for subjective responses, leave an internal marker comment and inspect the connection and visibility event timeline. Every saved manual mark records the marker and time in attempt metadata and recalculates the total score.
+
+A result with unresolved manual responses cannot be released. Saving a new mark withdraws any earlier release until the updated result is reviewed and published again. Students and public candidates see scores immediately only when the examination explicitly enables immediate results; otherwise they see the score after an administrator publishes that attempt result. Answer keys remain restricted to the management review screen.
+
+## Examination authoring
+
+Draft examinations can be divided into ordered sections with their own instructions. Questions retain the selected section when the attempt is created, allowing the student and public candidate interfaces to show the current section while keeping one continuous autosaved attempt.
+
+The question bank stores independent copies rather than links to questions in an examination. An administrator can save a draft question to the bank, search the bank by question text or topic, and copy a bank question into another draft and section. Editing either copy cannot silently change an existing paper. Answer keys and explanations are returned only by authenticated management endpoints.
+
 ## Examination navigation and entrance tests
 
 The portal groups assessment tools under a **CBT** drawer:
@@ -34,11 +46,29 @@ The portal groups assessment tools under a **CBT** drawer:
 
 External candidates select a published examination on the public `/cbt` page and provide their name and email before starting. The email reuses the candidate's existing profile for that intake. Passing an examination lets an administrator start student onboarding with one action. Public attempt access uses a separate expiring token and never exposes answer keys.
 
+The Applicants page is part of the CBT workflow, rather than an optional reporting screen. It must provide:
+
+- a searchable, filterable list with applicant, intake, latest examination, attempt state, best percentage and admission state;
+- summary counts for total applicants, passed applicants, attempts in progress and admitted applicants;
+- an applicant detail view containing contact details and complete attempt history;
+- a clear distinction between automatically scored attempts and attempts awaiting manual grading;
+- admission eligibility based on a completed passing attempt, with manual grading completed where required;
+- an idempotent admission action that reports whether it created a student, linked an existing student or sent an onboarding invitation; and
+- explicit loading, empty, failure and retry states so an API failure is never presented as an empty applicant list.
+
+Applicant records and attempts remain available after admission for audit purposes. Admission does not delete or rewrite the original external examination result.
+
 Proctoring is configured per examination. The current recorded mode captures connection and page-visibility events for review; it does not claim to record a camera or microphone. Human monitoring can be added to the teacher and administrator views without changing candidate identity or scoring.
 
 ## Academic-period visibility
 
-Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts and timetable summaries must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
+Operational pages default to the active academic session and active term. Results, payment records, fee components, dashboard counts, class rosters, attendance, timetables, CBT examinations and CBT applicants must not silently mix historical periods into the current view. A user must explicitly select a previous session or term to see it.
+
+CBT examinations and applicants use exact period membership. A term view contains only examinations assigned to that term and applicants with an attempt in that term; examinations without a term appear only in the whole-session view. Applicant details and admission actions reject a candidate who has no attempt in the selected period. The calendar date when an application or attempt was created is displayed separately from its academic-session label.
+
+Academic-period selection is page scoped. Changing the period on Results must not change Fees, Attendance, Timetable, CBT or Dashboard. A list and its direct detail screen may share a scope when they represent one workflow, such as CBT Applicants and Applicant Details. Admin, teacher, student and parent portals each expose the selector on period-sensitive pages; pages containing global records do not show a misleading selector.
+
+Class-based pages select a session because class enrollment and teacher assignment belong to a session. Monthly attendance selects a session and an explicit month. Term-based results select a session and term. When a session changes, a class selected in the previous session must be discarded if it is not part of the new session.
 
 Fees have an explicit scope:
 
@@ -46,7 +76,7 @@ Fees have an explicit scope:
 - A session-wide fee applies throughout its session and also appears in each term view for that session.
 - A whole-session summary includes session-wide fees and all term fees in that session.
 
-The dashboard displays the active session and term beside its summaries so the scope is visible.
+The dashboard displays its selected session and term beside its summaries so the scope is visible. Its selection remains independent from every other page.
 
 ## Classroom boundaries
 
