@@ -42,6 +42,8 @@ A draft can also be generated from a blueprint containing one or more rules for 
 
 Duplicate prevention is enforced by the API throughout authoring. A blueprint cannot select the same bank record twice, questions with equivalent normalized wording cannot appear across different rules, and questions already present in the draft are excluded. Manual creation, editing, question-bank import and final blueprint acceptance repeat the wording check so browser state cannot bypass it.
 
+The question bank itself also has a normalized-wording uniqueness constraint. During migration, the earliest active copy of legacy duplicate wording is retained and later copies are archived. The management list performs the same normalization defensively so duplicate rows are not presented while a deployment is rolling forward.
+
 ## Examination navigation and entrance tests
 
 The portal groups assessment tools under a **CBT** drawer:
