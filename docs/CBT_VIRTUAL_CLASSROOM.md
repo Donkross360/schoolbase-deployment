@@ -38,6 +38,10 @@ Examinations follow one controlled lifecycle: **draft → review → scheduled o
 
 The question bank stores independent copies rather than links to questions in an examination. An administrator can save a draft question to the bank, search the bank by question text or topic, and copy a bank question into another draft and section. Editing either copy cannot silently change an existing paper. Answer keys and explanations are returned only by authenticated management endpoints.
 
+A draft can also be generated from a blueprint containing one or more rules for topic, question type, difficulty, section and count. Generation first returns a capacity report and the exact proposed questions; it does not mutate the draft. The administrator can regenerate the preview or accept it. Acceptance copies those exact bank questions into the draft.
+
+Duplicate prevention is enforced by the API throughout authoring. A blueprint cannot select the same bank record twice, questions with equivalent normalized wording cannot appear across different rules, and questions already present in the draft are excluded. Manual creation, editing, question-bank import and final blueprint acceptance repeat the wording check so browser state cannot bypass it.
+
 ## Examination navigation and entrance tests
 
 The portal groups assessment tools under a **CBT** drawer:
