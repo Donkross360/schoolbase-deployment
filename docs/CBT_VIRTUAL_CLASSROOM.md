@@ -96,6 +96,14 @@ The collaboration service will use Excalidraw scene data with Yjs updates. It wi
 
 LiveKit Cloud is the initial media provider. Self-hosted LiveKit requires a separate media host, trusted TLS, TURN and the required UDP port range; it must not be added to the existing shared application host without capacity and network testing.
 
+## Classroom session foundation
+
+The first collaboration increment replaces the legacy class-ID-only contract with a scheduled classroom session. Each session belongs to one timetable schedule, class, subject, assigned teacher, academic session and optional term. This prevents an old classroom link from silently exposing a different academic period.
+
+The SchoolBase API owns classroom scheduling, authorization, join/leave presence, durable text chat and teacher-controlled student chat and drawing permissions. Active participation records retain join, last-seen and leave times so attendance duration can be derived without treating a page view as full attendance. Teachers may access only sessions for their assigned timetable schedule; students must have an active enrollment in the session's class; administrators retain operational access.
+
+The existing polling whiteboard UI is a legacy client to be migrated onto this session contract. Its class-ID endpoints are not the collaboration service. The next increment will connect teacher and student screens to classroom-session IDs, add explicit scheduled/live/ended controls, and replace whole-canvas polling with versioned collaboration updates and recoverable snapshots.
+
 ## Classroom product rules
 
 - A classroom session belongs to a timetable entry, class, subject and teacher.
