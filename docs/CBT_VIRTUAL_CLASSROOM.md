@@ -70,6 +70,8 @@ Operational pages default to the active academic session and active term. Result
 
 CBT examinations and applicants use exact period membership. A term view contains only examinations assigned to that term and applicants with an attempt in that term; examinations without a term appear only in the whole-session view. Applicant details and admission actions reject a candidate who has no attempt in the selected period. The calendar date when an application or attempt was created is displayed separately from its academic-session label.
 
+Legacy examinations that predate explicit period ownership are assigned to the session and term containing their earliest attempt date. They must never be attached wholesale to the session that happened to be active when the migration ran. This keeps historical external examinations and their applicants out of the current-period default while preserving them under explicit historical selection.
+
 Academic-period selection is page scoped. Changing the period on Results must not change Fees, Attendance, Timetable, CBT or Dashboard. A list and its direct detail screen may share a scope when they represent one workflow, such as CBT Applicants and Applicant Details. Admin, teacher, student and parent portals each expose the selector on period-sensitive pages; pages containing global records do not show a misleading selector.
 
 Class-based pages select a session because class enrollment and teacher assignment belong to a session. Monthly attendance selects a session and an explicit month. Term-based results select a session and term. When a session changes, a class selected in the previous session must be discarded if it is not part of the new session.
