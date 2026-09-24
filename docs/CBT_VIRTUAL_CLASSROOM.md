@@ -34,6 +34,8 @@ A result with unresolved manual responses cannot be released. Saving a new mark 
 
 Draft examinations can be divided into ordered sections with their own instructions. Questions retain the selected section when the attempt is created, allowing the student and public candidate interfaces to show the current section while keeping one continuous autosaved attempt.
 
+Examinations follow one controlled lifecycle: **draft → review → scheduled or active → closed → published → archived**. Draft papers remain editable. Review locks authoring while an administrator checks the paper. A future-dated paper may be scheduled, while a paper intended for immediate use becomes active. Only active examinations accept candidates. Closing prevents new attempts, publishing releases the final examination reporting state, and archiving removes the paper from routine operational views. Review and scheduled papers may return to draft when corrections are required.
+
 The question bank stores independent copies rather than links to questions in an examination. An administrator can save a draft question to the bank, search the bank by question text or topic, and copy a bank question into another draft and section. Editing either copy cannot silently change an existing paper. Answer keys and explanations are returned only by authenticated management endpoints.
 
 ## Examination navigation and entrance tests
