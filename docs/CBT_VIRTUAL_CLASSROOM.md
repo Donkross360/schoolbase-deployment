@@ -15,16 +15,16 @@ CBT does not depend on the real-time classroom services. A media outage must nev
 
 The CBT foundation and administrator operations are implemented: separate internal and external examination flows, class-assigned student access, public applicant access, autosaved attempts, scoring, manual marking, question-bank reuse, monitoring signals, analytics and result publication. Student endpoints accept only in-school examinations; public applicant endpoints accept only entrance examinations. Browser activity is shown on demand in a compact drawer with review and acknowledgement controls rather than extending the result page indefinitely.
 
-The next implementation increment is **role-scoped internal examination operations**:
+The role-scoped internal examination operations increment is implemented:
 
-1. Let administrators assign one or more authorized teachers or administrators as proctors for an internal examination.
-2. Give an assigned teacher a class-scoped live monitor containing only their examination, assigned classes and candidates.
-3. Show not-started, online, reconnecting, submitted and awaiting-marking candidates, with answered progress and remaining time.
-4. Reuse the browser-activity drawer for candidate event review and acknowledgement while keeping the monitor compact.
-5. Record proctor assignment, review and acknowledgement actions in the audit log.
-6. Keep examination authoring, answer keys, admission actions and cross-school reporting restricted to administrators unless an explicit permission grants access.
+1. Administrators assign teachers to an internal examination and to an explicit subset of that examination's classes.
+2. Assigned teachers receive a class-scoped live monitor containing only eligible candidates and attempts from those classes.
+3. The monitor shows named not-started, online, reconnecting, submitted and awaiting-marking candidates, with answered progress and remaining time.
+4. Browser activity opens in a compact drawer and supports acknowledgement without exposing answers or answer keys.
+5. Proctor assignment, removal, activity review and acknowledgement actions are recorded in the activity log.
+6. Examination authoring, answer keys, grading, result publication, admission actions and school-wide reporting remain administrator-only.
 
-After this increment, CBT operations are complete enough to proceed to the **Yjs collaboration-service foundation**: incremental whiteboard updates, presence and cursors, reconnect recovery, and page-based snapshots. Live audio, voice notes, screen sharing and optional video remain later media-service increments.
+The next implementation increment is the **Yjs collaboration-service foundation**: define the standalone service contract and authentication hand-off, persist incremental whiteboard updates and page-based snapshots, expose presence and cursors, and recover after reconnect without replacing a newer board. Live audio, voice notes, screen sharing and optional video remain later media-service increments.
 
 ## CBT reliability contract
 
