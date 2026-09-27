@@ -131,7 +131,9 @@ The original polling whiteboard UI was a legacy class-ID client rather than the 
 
 The portal now opens classrooms by classroom-session ID. Teachers start a live lesson from an academic timetable entry, students receive a join action only while that lesson is live, and ending a lesson closes active participation records. Join, heartbeat and leave timestamps provide the attendance foundation. Durable text chat and teacher-controlled drawing permissions use the session authorization contract.
 
-Whiteboard saves now carry an optimistic version. A stale writer receives a conflict and reloads the current snapshot instead of silently overwriting it. This is the recovery boundary for the existing canvas while the separate collaboration service is introduced. The next classroom increment is the Yjs collaboration service: incremental updates, presence and cursor awareness, page-based snapshots and reconnect recovery without whole-snapshot polling.
+Whiteboard saves first gained an optimistic version so a stale writer could not silently overwrite a newer board. The classroom now uses a Yjs collaboration channel instead of whole-snapshot polling. A short-lived classroom ticket authorizes the WebSocket connection; incremental updates are sequenced in PostgreSQL, periodically compacted into recoverable page snapshots and replayed after reconnect. Presence and cursor-awareness events remain ephemeral. Changes made during a brief connection loss are merged and sent after synchronization.
+
+The current drawing surface stores its existing canvas state in the shared Yjs document, preserving the deployed teacher and student workflow while establishing the conflict-free transport. The next classroom increment is the collaborative board UI: expose page creation and navigation, render participant cursors and presence, and replace the legacy canvas adapter with an Excalidraw scene adapter. That increment must reuse the current Yjs document and page contract rather than creating another persistence path.
 
 ## Classroom product rules
 
@@ -145,4 +147,4 @@ Whiteboard saves now carry an optimistic version. A stale writer receives a conf
 
 ## Deployment impact
 
-The first CBT release uses the existing SchoolBase backend, PostgreSQL and frontend image. It introduces no new service or public port. The collaboration and media phases will add separately deployable services and receive their own Coolify runbook before production rollout.
+The CBT release and initial collaboration channel use the existing SchoolBase backend, PostgreSQL and frontend image. Socket.IO is served through the existing backend HTTPS origin and reverse proxy, so it introduces no new public port. The ticket and namespace boundary allow the collaboration process to be extracted later without changing classroom identity or permissions. The media phase will add a separately deployable service and receive its own Coolify runbook before production rollout.
