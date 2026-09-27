@@ -11,6 +11,21 @@ This document records the implementation direction for SchoolBase assessment and
 
 CBT does not depend on the real-time classroom services. A media outage must never prevent students from taking an examination.
 
+## Current implementation and next step
+
+The CBT foundation and administrator operations are implemented: separate internal and external examination flows, class-assigned student access, public applicant access, autosaved attempts, scoring, manual marking, question-bank reuse, monitoring signals, analytics and result publication. Student endpoints accept only in-school examinations; public applicant endpoints accept only entrance examinations. Browser activity is shown on demand in a compact drawer with review and acknowledgement controls rather than extending the result page indefinitely.
+
+The next implementation increment is **role-scoped internal examination operations**:
+
+1. Let administrators assign one or more authorized teachers or administrators as proctors for an internal examination.
+2. Give an assigned teacher a class-scoped live monitor containing only their examination, assigned classes and candidates.
+3. Show not-started, online, reconnecting, submitted and awaiting-marking candidates, with answered progress and remaining time.
+4. Reuse the browser-activity drawer for candidate event review and acknowledgement while keeping the monitor compact.
+5. Record proctor assignment, review and acknowledgement actions in the audit log.
+6. Keep examination authoring, answer keys, admission actions and cross-school reporting restricted to administrators unless an explicit permission grants access.
+
+After this increment, CBT operations are complete enough to proceed to the **Yjs collaboration-service foundation**: incremental whiteboard updates, presence and cursors, reconnect recovery, and page-based snapshots. Live audio, voice notes, screen sharing and optional video remain later media-service increments.
+
 ## CBT reliability contract
 
 - PostgreSQL is authoritative for examination rules, attempts, answers and results.
