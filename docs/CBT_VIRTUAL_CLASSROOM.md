@@ -24,7 +24,9 @@ The role-scoped internal examination operations increment is implemented:
 5. Proctor assignment, removal, activity review and acknowledgement actions are recorded in the activity log.
 6. Examination authoring, answer keys, grading, result publication, admission actions and school-wide reporting remain administrator-only.
 
-The next implementation increment is the **Yjs collaboration-service foundation**: define the standalone service contract and authentication hand-off, persist incremental whiteboard updates and page-based snapshots, expose presence and cursors, and recover after reconnect without replacing a newer board. Live audio, voice notes, screen sharing and optional video remain later media-service increments.
+The Yjs collaboration foundation and page workspace are implemented. Short-lived classroom tickets authorize the collaboration namespace; PostgreSQL stores sequenced updates and compacted snapshots; reconnecting clients merge offline changes; and connected users receive complete presence snapshots instead of seeing only later joins. Teachers can create, rename, reorder and delete board pages, students can navigate them, and named cursor awareness remains ephemeral. Drawing permission changes are enforced against the live classroom state and broadcast to connected clients.
+
+The next implementation increment is the **Excalidraw element adapter**. Each scene element must have its own Yjs identity so simultaneous changes merge at element level; replacing the visible canvas while continuing to save one serialized path value would still be last-writer-wins. The adapter must import the legacy first-page drawing once, preserve page snapshots, and keep media assets outside the Yjs update stream. Live audio, voice notes, screen sharing and optional video remain later media-service increments.
 
 ## CBT reliability contract
 
@@ -133,7 +135,7 @@ The portal now opens classrooms by classroom-session ID. Teachers start a live l
 
 Whiteboard saves first gained an optimistic version so a stale writer could not silently overwrite a newer board. The classroom now uses a Yjs collaboration channel instead of whole-snapshot polling. A short-lived classroom ticket authorizes the WebSocket connection; incremental updates are sequenced in PostgreSQL, periodically compacted into recoverable page snapshots and replayed after reconnect. Presence and cursor-awareness events remain ephemeral. Changes made during a brief connection loss are merged and sent after synchronization.
 
-The current drawing surface stores its existing canvas state in the shared Yjs document, preserving the deployed teacher and student workflow while establishing the conflict-free transport. The next classroom increment is the collaborative board UI: expose page creation and navigation, render participant cursors and presence, and replace the legacy canvas adapter with an Excalidraw scene adapter. That increment must reuse the current Yjs document and page contract rather than creating another persistence path.
+The current drawing surface stores its existing canvas state in the shared Yjs document, preserving the deployed teacher and student workflow while establishing the conflict-free transport. Page creation and navigation, participant presence and named cursors now use that same contract. The next classroom increment replaces the legacy canvas adapter with an Excalidraw element adapter. It must reuse the current Yjs document and page contract rather than creating another persistence path.
 
 ## Classroom product rules
 
