@@ -14,7 +14,7 @@ set -euo pipefail
 
 network=${SCHOOLBASE_NETWORK:-schoolbase-shared}
 postgres_image=${POSTGRES_CLIENT_IMAGE:-postgres:16.15-alpine}
-minio_client_image=${MINIO_CLIENT_IMAGE:-quay.io/minio/mc:RELEASE.2025-07-16T15-35-03Z}
+minio_client_image=${MINIO_CLIENT_IMAGE:-minio/mc:RELEASE.2025-07-16T15-35-03Z}
 public_read=${MINIO_BUCKET_PUBLIC_READ:-true}
 
 [[ "$DB_NAME" =~ ^[a-z][a-z0-9_]{1,62}$ ]] || { echo "Unsafe DB_NAME" >&2; exit 1; }

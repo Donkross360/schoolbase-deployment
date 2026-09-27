@@ -1,4 +1,4 @@
-FROM quay.io/minio/mc:RELEASE.2025-07-16T15-35-03Z AS minio-client
+FROM minio/mc:RELEASE.2025-07-16T15-35-03Z AS minio-client
 
 FROM postgres:16.15-alpine
 
