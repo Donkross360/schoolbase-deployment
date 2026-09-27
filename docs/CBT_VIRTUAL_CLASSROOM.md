@@ -112,7 +112,11 @@ The first collaboration increment replaces the legacy class-ID-only contract wit
 
 The SchoolBase API owns classroom scheduling, authorization, join/leave presence, durable text chat and teacher-controlled student chat and drawing permissions. Active participation records retain join, last-seen and leave times so attendance duration can be derived without treating a page view as full attendance. Teachers may access only sessions for their assigned timetable schedule; students must have an active enrollment in the session's class; administrators retain operational access.
 
-The existing polling whiteboard UI is a legacy client to be migrated onto this session contract. Its class-ID endpoints are not the collaboration service. The next increment will connect teacher and student screens to classroom-session IDs, add explicit scheduled/live/ended controls, and replace whole-canvas polling with versioned collaboration updates and recoverable snapshots.
+The original polling whiteboard UI was a legacy class-ID client rather than the collaboration service. It is retained as the drawing surface while its authorization, persistence and navigation move onto the classroom-session contract.
+
+The portal now opens classrooms by classroom-session ID. Teachers start a live lesson from an academic timetable entry, students receive a join action only while that lesson is live, and ending a lesson closes active participation records. Join, heartbeat and leave timestamps provide the attendance foundation. Durable text chat and teacher-controlled drawing permissions use the session authorization contract.
+
+Whiteboard saves now carry an optimistic version. A stale writer receives a conflict and reloads the current snapshot instead of silently overwriting it. This is the recovery boundary for the existing canvas while the separate collaboration service is introduced. The next classroom increment is the Yjs collaboration service: incremental updates, presence and cursor awareness, page-based snapshots and reconnect recovery without whole-snapshot polling.
 
 ## Classroom product rules
 
