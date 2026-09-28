@@ -28,7 +28,9 @@ The Yjs collaboration foundation and page workspace are implemented. Short-lived
 
 The **Excalidraw element adapter** is implemented. Each scene element has its own Yjs identity so changes to independent shapes merge without replacing the complete drawing. Existing React Sketch Canvas strokes are imported once when a page has no Excalidraw scene, while the legacy value remains available for rollback. Deleted elements are retained as Excalidraw tombstones so an offline client cannot restore them accidentally. Uploaded images and linked videos remain outside the Yjs element stream.
 
-The next implementation increment is **durable classroom voice notes**. A teacher or student with chat permission can record, preview and explicitly send a short voice message. The API stores its metadata with the classroom message, MinIO stores the audio object, and the existing classroom-session authorization controls upload and playback. Recording must never begin without a user action, and a failed upload must preserve the local recording for retry. Live audio follows as a separate LiveKit increment and is not recorded by default.
+**Durable classroom voice notes** are implemented. A teacher or student with chat permission can record, preview, discard and explicitly send a voice message of up to 120 seconds and 8 MB. PostgreSQL stores message metadata, MinIO stores the audio object, and upload and playback both use classroom-session authorization. Recording begins only after the microphone action, stops automatically at the duration limit, and a failed upload preserves the local preview for retry.
+
+The next implementation increment is **LiveKit live audio**. Teachers control whether student microphones are available, participants can see speaking, muted and reconnecting states, and losing media connectivity must not disconnect chat or the whiteboard. Joining audio requires an explicit user action. Live audio is not recorded by default; recording remains unavailable until a school policy, consent flow and retention period exist.
 
 ## CBT reliability contract
 
@@ -137,7 +139,7 @@ The portal now opens classrooms by classroom-session ID. Teachers start a live l
 
 Whiteboard saves first gained an optimistic version so a stale writer could not silently overwrite a newer board. The classroom now uses a Yjs collaboration channel instead of whole-snapshot polling. A short-lived classroom ticket authorizes the WebSocket connection; incremental updates are sequenced in PostgreSQL, periodically compacted into recoverable page snapshots and replayed after reconnect. Presence and cursor-awareness events remain ephemeral. Changes made during a brief connection loss are merged and sent after synchronization.
 
-The drawing surface stores every Excalidraw element under its own key in the shared Yjs document. Page creation and navigation, participant presence and named cursors use the same classroom-session contract. The adapter imports legacy strokes only on an empty Excalidraw page and keeps uploaded media payloads out of frequent Yjs updates. The next classroom increment adds durable voice notes to the existing chat contract before introducing live audio through the separate media service.
+The drawing surface stores every Excalidraw element under its own key in the shared Yjs document. Page creation and navigation, participant presence and named cursors use the same classroom-session contract. The adapter imports legacy strokes only on an empty Excalidraw page and keeps uploaded media payloads out of frequent Yjs updates. Durable voice notes extend the existing chat contract; live audio follows through the separate media service.
 
 ## Classroom product rules
 
