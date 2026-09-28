@@ -30,7 +30,9 @@ The **Excalidraw element adapter** is implemented. Each scene element has its ow
 
 **Durable classroom voice notes** are implemented. A teacher or student with chat permission can record, preview, discard and explicitly send a voice message of up to 120 seconds and 8 MB. PostgreSQL stores message metadata, MinIO stores the audio object, and upload and playback both use classroom-session authorization. Recording begins only after the microphone action, stops automatically at the duration limit, and a failed upload preserves the local preview for retry.
 
-The next implementation increment is **LiveKit live audio**. Teachers control whether student microphones are available, participants can see speaking, muted and reconnecting states, and losing media connectivity must not disconnect chat or the whiteboard. Joining audio requires an explicit user action. Live audio is not recorded by default; recording remains unavailable until a school policy, consent flow and retention period exist.
+**LiveKit live audio** is implemented as an independent classroom channel. Joining requires an explicit action and never activates the microphone automatically. Teachers and administrators can speak and can enable or revoke student microphones during a lesson; participant tokens permit microphone audio only and the backend synchronizes permission changes to students who are already connected. The classroom shows connected, reconnecting, speaking and muted states, while a media failure leaves chat and the whiteboard available. Live audio is not recorded; recording remains unavailable until a school policy, consent flow and retention period exist.
+
+The next implementation increment is **teacher-controlled screen sharing**. It will reuse the classroom-scoped media token, allow only teachers and administrators to start a screen share, show an explicit sharing indicator and stop cleanly without interrupting audio, chat or whiteboard collaboration. Student screen sharing and camera video remain outside this increment.
 
 ## CBT reliability contract
 
@@ -139,7 +141,7 @@ The portal now opens classrooms by classroom-session ID. Teachers start a live l
 
 Whiteboard saves first gained an optimistic version so a stale writer could not silently overwrite a newer board. The classroom now uses a Yjs collaboration channel instead of whole-snapshot polling. A short-lived classroom ticket authorizes the WebSocket connection; incremental updates are sequenced in PostgreSQL, periodically compacted into recoverable page snapshots and replayed after reconnect. Presence and cursor-awareness events remain ephemeral. Changes made during a brief connection loss are merged and sent after synchronization.
 
-The drawing surface stores every Excalidraw element under its own key in the shared Yjs document. Page creation and navigation, participant presence and named cursors use the same classroom-session contract. The adapter imports legacy strokes only on an empty Excalidraw page and keeps uploaded media payloads out of frequent Yjs updates. Durable voice notes extend the existing chat contract; live audio follows through the separate media service.
+The drawing surface stores every Excalidraw element under its own key in the shared Yjs document. Page creation and navigation, participant presence and named cursors use the same classroom-session contract. The adapter imports legacy strokes only on an empty Excalidraw page and keeps uploaded media payloads out of frequent Yjs updates. Durable voice notes extend the existing chat contract. Live audio uses short-lived LiveKit participant tokens through the separate media service and does not place media traffic on the SchoolBase API process.
 
 ## Classroom product rules
 
@@ -153,4 +155,4 @@ The drawing surface stores every Excalidraw element under its own key in the sha
 
 ## Deployment impact
 
-The CBT release and initial collaboration channel use the existing SchoolBase backend, PostgreSQL and frontend image. Socket.IO is served through the existing backend HTTPS origin and reverse proxy, so it introduces no new public port. The ticket and namespace boundary allow the collaboration process to be extracted later without changing classroom identity or permissions. The media phase will add a separately deployable service and receive its own Coolify runbook before production rollout.
+The CBT release and collaboration channel use the existing SchoolBase backend, PostgreSQL and frontend image. Socket.IO is served through the existing backend HTTPS origin and reverse proxy, so it introduces no new public port. The ticket and namespace boundary allow the collaboration process to be extracted later without changing classroom identity or permissions. Live audio uses LiveKit Cloud or a separately operated LiveKit service configured with `LIVEKIT_URL`, `LIVEKIT_API_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET`; it does not expose a new port from the combined SchoolBase container.

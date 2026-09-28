@@ -62,12 +62,21 @@ are runtime variables and must not be baked into the image.
 | `JWT_SECRET` | Per-school access-token secret | generated secret |
 | `JWT_REFRESH_SECRET` | Per-school refresh-token secret | generated secret |
 | `UPLOAD_KEY` | Per-school unauthenticated upload key | generated secret |
+| `LIVEKIT_URL` | Browser WebSocket endpoint for live classroom audio | `wss://schoolbase-demo.livekit.cloud` |
+| `LIVEKIT_API_URL` | Backend HTTPS endpoint for LiveKit room administration | `https://schoolbase-demo.livekit.cloud` |
+| `LIVEKIT_API_KEY` | Backend-only LiveKit API key | provisioned secret |
+| `LIVEKIT_API_SECRET` | Backend-only LiveKit API secret | provisioned secret |
 | `APP_NAME` | Application display name | `SchoolBase` |
 | `APP_SLUG` | Stable school/application identifier | `demo` |
 | `SCHOOL_NAME` | School display name | deployment-specific |
 
 Email, Paystack, Google OAuth, branding, log level, token duration, and invite
 expiry settings remain optional until their corresponding feature is enabled.
+
+Live classroom audio remains unavailable until all four `LIVEKIT_*` values are
+configured. The API key and secret are backend-only. The browser receives a
+short-lived, classroom-scoped participant token only after SchoolBase verifies
+the current teacher, administrator, or student assignment.
 
 `SCHOOL_NAME` is also the tenant-facing API identity. For example, Demo's API
 documentation is titled **SchoolBase Demo API**. The immutable image must not

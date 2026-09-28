@@ -24,6 +24,19 @@ jobs:
       - name: Check out deployment repository
         uses: actions/checkout@v5
 
+      - name: Validate source refs
+        env:
+          FRONTEND_REF: ${{ inputs.frontend_ref }}
+          BACKEND_REF: ${{ inputs.backend_ref }}
+        shell: bash
+        run: |
+          for source_ref in "$FRONTEND_REF" "$BACKEND_REF"; do
+            if [[ "$source_ref" =~ ^[0-9a-fA-F]{7,39}$ ]]; then
+              echo "Abbreviated commit SHA '$source_ref' is ambiguous to actions/checkout. Use a branch, tag, or the full 40-character SHA." >&2
+              exit 1
+            fi
+          done
+
       - name: Check out frontend
         uses: actions/checkout@v5
         with:
