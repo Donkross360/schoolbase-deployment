@@ -38,7 +38,9 @@ The **Excalidraw element adapter** is implemented. Each scene element has its ow
 
 **Live classroom camera video** is implemented in the existing LiveKit classroom room. Teacher and student cameras remain off until each participant explicitly starts one, teachers control whether students may publish cameras, and permission changes apply to participants who are already connected. Named responsive video tiles show speaking state alongside screen sharing without recording video. Camera failures remain isolated from attendance, live audio, chat and the whiteboard.
 
-The next implementation increment is **classroom operational hardening**: device selection and preflight checks, participant-level teacher moderation, network-quality guidance, and reconnect recovery for active media tracks. This will make the completed live-teaching foundation dependable across shared school devices and weak mobile networks before adding further classroom product scope.
+**Classroom operational hardening** is implemented. Joining live media now begins with a camera and microphone permission check and explicit input/output device selection. Connected users can change devices without leaving the lesson, see their LiveKit connection quality, and receive a clear reconnection result. The client restores the participant's intended microphone and camera state after a recovered media connection. Teachers can change microphone and camera publishing permission for an individual connected student without changing the lesson-wide defaults.
+
+The next implementation increment is **classroom reliability validation and support diagnostics**: exercise the media and collaboration paths across supported mobile browsers and weak-network transitions, expose actionable failure details without leaking credentials, and give administrators a session health view containing connection interruptions, media failures and collaboration reconnects. This validation must complete before introducing recording or other higher-cost classroom media features.
 
 ## CBT reliability contract
 
