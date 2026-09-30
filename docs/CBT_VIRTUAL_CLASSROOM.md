@@ -89,7 +89,7 @@ The Applicants page is part of the CBT workflow, rather than an optional reporti
 
 Applicant records and attempts remain available after admission for audit purposes. Admission does not delete or rewrite the original external examination result.
 
-Proctoring is configured per examination. The current recorded mode captures connection and page-visibility events for review; it does not claim to record a camera or microphone. Human monitoring can be added to the teacher and administrator views without changing candidate identity or scoring.
+Proctoring is configured per examination with explicit modes: no monitoring, browser-activity monitoring, live camera monitoring, or live camera plus browser activity. In live-camera modes, candidates publish camera video to a restricted LiveKit room and cannot subscribe to any participant. Assigned teachers and administrators can subscribe to candidate cameras but cannot publish into the examination room. Camera video is live only and is not recorded. A media outage is shown clearly but does not erase answers or prevent examination submission.
 
 The examination management screen is also the first monitoring workspace. It refreshes active attempts without a page reload and shows completion, marking and publication counts, answered-question progress, connection interruptions and page-exit events. These signals are review aids rather than automatic proof of misconduct. Candidate names work for both enrolled students and public applicants.
 
