@@ -36,7 +36,9 @@ The **Excalidraw element adapter** is implemented. Each scene element has its ow
 
 **Classroom attendance review** is implemented. Every enrolled student appears in a teacher-facing lesson summary, including students who never joined. Join, heartbeat, reconnect and leave evidence produces first join, last activity, connected duration, reconnect count and present, late, partial or absent states. Teacher corrections are append-only, require a reason, retain the derived status and underlying evidence, and write to the activity log. Reviews remain scoped to the classroom session and academic period and can be exported as CSV.
 
-The next implementation increment is **live classroom camera video**. It will add explicit teacher camera controls and teacher-controlled student camera permission to the existing LiveKit classroom room. Cameras must remain off until each participant acts, video must not be recorded, mobile layouts must preserve the board and chat, and media failure must leave attendance, chat and the whiteboard usable.
+**Live classroom camera video** is implemented in the existing LiveKit classroom room. Teacher and student cameras remain off until each participant explicitly starts one, teachers control whether students may publish cameras, and permission changes apply to participants who are already connected. Named responsive video tiles show speaking state alongside screen sharing without recording video. Camera failures remain isolated from attendance, live audio, chat and the whiteboard.
+
+The next implementation increment is **classroom operational hardening**: device selection and preflight checks, participant-level teacher moderation, network-quality guidance, and reconnect recovery for active media tracks. This will make the completed live-teaching foundation dependable across shared school devices and weak mobile networks before adding further classroom product scope.
 
 ## CBT reliability contract
 
