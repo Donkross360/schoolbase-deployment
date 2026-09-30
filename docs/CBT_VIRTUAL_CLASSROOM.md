@@ -44,6 +44,16 @@ The **Excalidraw element adapter** is implemented. Each scene element has its ow
 
 The next implementation increment is **cross-device reliability validation**. The release checklist must exercise Chrome on Android and desktop, Safari on iOS where available, device switching, denied permissions, missing cameras, Wi-Fi/mobile-data transitions, browser backgrounding, whiteboard offline recovery, media reconnect recovery, participant moderation, attendance evidence and clean lesson ending. Defects found during this matrix are reliability work and must be resolved before introducing recording or other higher-cost classroom media features.
 
+## Assignment workflow
+
+Teacher and student assignments are implemented as an academic-period-scoped workflow. A teacher creates a draft for a class and a subject they are assigned to teach, adds instructions, a due date, total marks and an optional resource link, then publishes it to enrolled students. Published work can be closed, reopened or archived. Archived work is excluded from the routine view but retained with its submissions and grades.
+
+Students see only published or closed work for classes in which they have an active enrollment. They can save an answer as a draft, attach a resource link and explicitly submit or resubmit while the assignment remains open. The server records submission time and determines late status from its own clock. A teacher can review submitted work, award marks up to the configured maximum and leave feedback; graded work becomes read-only in the student workspace.
+
+Teacher and student dashboards now derive assignment counts and recent work from the assignment API rather than placeholders. Assignment lists default to the page's selected academic session and term so current and historical work do not mix silently.
+
+The assignment release checklist must cover teacher subject authorization, draft visibility, publish/close/reopen/archive transitions, active class enrollment, student draft recovery, late submission labeling, resubmission, maximum-mark enforcement, teacher feedback and responsive layouts on Android, iOS and desktop.
+
 ## CBT reliability contract
 
 - PostgreSQL is authoritative for examination rules, attempts, answers and results.
