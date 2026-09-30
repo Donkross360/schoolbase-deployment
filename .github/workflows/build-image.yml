@@ -115,7 +115,8 @@ jobs:
         run: |
           echo "### SchoolBase image" >> "$GITHUB_STEP_SUMMARY"
           echo '```text' >> "$GITHUB_STEP_SUMMARY"
-          echo '${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.tag }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'SCHOOLBASE_IMAGE=${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.tag }}' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Copy only the value after \`SCHOOLBASE_IMAGE=\` into Coolify; do not include \`docker pull\` or \`pull\`." >> "$GITHUB_STEP_SUMMARY"
           echo "Frontend: ${{ steps.metadata.outputs.frontend_sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Backend: ${{ steps.metadata.outputs.backend_sha }}" >> "$GITHUB_STEP_SUMMARY"

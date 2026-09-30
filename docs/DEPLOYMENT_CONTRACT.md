@@ -112,6 +112,10 @@ This setting must never be baked into `SCHOOLBASE_IMAGE`: Demo and St Paul use
 the same immutable image while keeping independent layouts and content in their
 separate databases.
 
+`SCHOOLBASE_IMAGE` must contain only the immutable GHCR reference, for example
+`ghcr.io/donkross360/schoolbase:fe-abc123-be-def456`. Do not paste `docker pull`,
+`pull`, quotes, or a shell command into the Coolify environment value.
+
 ## Portal access and results contract
 
 The login identifier accepts either a user's email address or a student's

@@ -62,10 +62,10 @@ else
   [[ ${MINIO_PUBLIC_URL:-} =~ ^https://[^/]+$ ]] || fail "MINIO_PUBLIC_URL must be an HTTPS origin without a path"
   [[ ${SUPERADMIN_LOGIN_URL:-} == "${FRONTEND_URL:-}/super-admin/login" ]] || fail "SUPERADMIN_LOGIN_URL must use FRONTEND_URL and /super-admin/login"
   [[ ",${CORS_ORIGINS:-}," == *",${FRONTEND_URL:-},"* ]] || fail "CORS_ORIGINS must include FRONTEND_URL"
+  [[ ${SCHOOLBASE_IMAGE:-} =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._/-]+:[A-Za-z0-9._-]+$ ]] || fail "SCHOOLBASE_IMAGE must contain only a GHCR image reference, without 'docker pull', 'pull', quotes, or whitespace"
   [[ ${SCHOOLBASE_IMAGE:-} != *:latest ]] || fail "SCHOOLBASE_IMAGE must use an immutable tag"
   [[ ${JWT_SECRET:-} != "${JWT_REFRESH_SECRET:-}" ]] || fail "JWT_SECRET and JWT_REFRESH_SECRET must be different"
 fi
 
 (( errors == 0 )) || exit 1
 echo "$mode configuration is valid"
-
