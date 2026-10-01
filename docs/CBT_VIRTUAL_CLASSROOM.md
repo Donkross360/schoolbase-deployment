@@ -52,9 +52,15 @@ Students see only published or closed work for classes in which they have an act
 
 Assignment files are private MinIO objects. PDF, Office, text and image files are accepted up to 10 MB each. Listing and download always repeat assignment authorization, students can see teacher resources and only their own submission files, and only the uploader can remove a file. Publication, submission and grading create assignment notifications with direct links to the appropriate portal workspace.
 
+Assignment follow-up is implemented. A database-backed reminder worker sends one due-soon notification during the final 24 hours and one overdue notification after the deadline to students who have not submitted. Reminder records and a PostgreSQL advisory lock prevent duplicates across restarts and multiple application instances. Linked parents receive overdue and grading notifications.
+
+The parent portal includes an academic-period-scoped assignment workspace for the selected linked child. It shows due, due-soon, overdue, submitted, late and graded states, teacher instructions and resources, the selected child's submitted files, marks and feedback. Every parent request revalidates the parent-to-student relationship.
+
+Teachers have a class-work report with class, subject and submission-status filters. It includes missing, submitted, late and graded counts, average graded percentage, student-level rows and CSV export.
+
 Teacher and student dashboards now derive assignment counts and recent work from the assignment API rather than placeholders. Assignment lists default to the page's selected academic session and term so current and historical work do not mix silently.
 
-The assignment release checklist must cover teacher subject authorization, draft visibility, publish/close/reopen/archive transitions, active class enrollment, student draft recovery, late submission labeling, resubmission, maximum-mark enforcement, teacher feedback and responsive layouts on Android, iOS and desktop.
+The assignment release checklist covers teacher subject authorization, draft visibility, publish/close/reopen/archive transitions, active class enrollment, student draft recovery, late submission labeling, resubmission, maximum-mark enforcement, teacher feedback, reminder idempotency, parent-child authorization, reporting filters, CSV export and responsive layouts on Android, iOS and desktop.
 
 ## CBT reliability contract
 
