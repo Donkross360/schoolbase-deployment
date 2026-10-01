@@ -46,9 +46,11 @@ The next implementation increment is **cross-device reliability validation**. Th
 
 ## Assignment workflow
 
-Teacher and student assignments are implemented as an academic-period-scoped workflow. A teacher creates a draft for a class and a subject they are assigned to teach, adds instructions, a due date, total marks and an optional resource link, then publishes it to enrolled students. Published work can be closed, reopened or archived. Archived work is excluded from the routine view but retained with its submissions and grades.
+Teacher and student assignments are implemented as an academic-period-scoped workflow. A teacher creates a draft for a class and a subject they are assigned to teach, adds instructions, a due date, total marks and one or more resources, then publishes it to enrolled students. Published work can be closed, reopened or archived. Archived work is excluded from the routine view but retained with its submissions and grades.
 
-Students see only published or closed work for classes in which they have an active enrollment. They can save an answer as a draft, attach a resource link and explicitly submit or resubmit while the assignment remains open. The server records submission time and determines late status from its own clock. A teacher can review submitted work, award marks up to the configured maximum and leave feedback; graded work becomes read-only in the student workspace.
+Students see only published or closed work for classes in which they have an active enrollment. They can save an answer as a draft, upload multiple files and explicitly submit or resubmit while the assignment remains open. The server records submission time and determines late status from its own clock. A teacher can review submitted work, download its files, award marks up to the configured maximum and leave feedback; graded work becomes read-only in the student workspace.
+
+Assignment files are private MinIO objects. PDF, Office, text and image files are accepted up to 10 MB each. Listing and download always repeat assignment authorization, students can see teacher resources and only their own submission files, and only the uploader can remove a file. Publication, submission and grading create assignment notifications with direct links to the appropriate portal workspace.
 
 Teacher and student dashboards now derive assignment counts and recent work from the assignment API rather than placeholders. Assignment lists default to the page's selected academic session and term so current and historical work do not mix silently.
 
