@@ -80,7 +80,7 @@ jobs:
         run: |
           set -o pipefail
           if ! flutter build apk --debug --dart-define="SCHOOLBASE_API_BASE=$API_BASE" 2>&1 | tee build-apk.log; then
-            error_lines=$(tail -n 60 build-apk.log)
+            error_lines=$(tail -c 3000 build-apk.log)
             error_lines=${error_lines//'%'/'%25'}
             error_lines=${error_lines//$'\r'/'%0D'}
             error_lines=${error_lines//$'\n'/'%0A'}
