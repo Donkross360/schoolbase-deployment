@@ -1,9 +1,12 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
+import '../services/face_movement_challenge.dart';
 import '../services/teacher_attendance_service.dart';
 
 class FaceCheckInScreen extends StatefulWidget {
@@ -32,6 +35,18 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
   Uint8List? _photo;
   String? _error;
   bool _working = false;
+  bool _processingFrame = false;
+  bool _capturing = false;
+  late FaceMovementChallenge _challenge = FaceMovementChallenge();
+  final FaceDetector _detector = FaceDetector(
+    options: FaceDetectorOptions(
+      enableClassification: true,
+      enableContours: true,
+      enableTracking: true,
+      performanceMode: FaceDetectorMode.accurate,
+    ),
+  );
+  int? _trackingId;
 
   @override
   void initState() {
@@ -54,8 +69,10 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
         selected,
         ResolutionPreset.high,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.nv21,
       );
       await controller.initialize();
+      await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
       if (!mounted) {
         await controller.dispose();
         return;
@@ -64,8 +81,11 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
       setState(() {
         _camera = controller;
         _error = null;
+        _challenge = FaceMovementChallenge();
+        _trackingId = null;
       });
       await previous?.dispose();
+      await controller.startImageStream(_processFrame);
     } catch (error) {
       if (mounted) setState(() => _error = 'Camera unavailable: $error');
     }
@@ -80,6 +100,83 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
     } else if (state == AppLifecycleState.resumed && _photo == null) {
       _startCamera();
     }
+  }
+
+  Future<void> _processFrame(CameraImage frame) async {
+    if (_processingFrame || _capturing || !mounted || _photo != null) return;
+    final camera = _camera;
+    if (camera == null) return;
+    if (frame.format.group != ImageFormatGroup.nv21 ||
+        frame.planes.length != 1) {
+      setState(
+        () => _error =
+            'This camera cannot provide the required face video format.',
+      );
+      return;
+    }
+    _processingFrame = true;
+    try {
+      final rotation = InputImageRotationValue.fromRawValue(
+        camera.description.sensorOrientation,
+      );
+      if (rotation == null) throw StateError('Unsupported camera rotation');
+      final image = InputImage.fromBytes(
+        bytes: frame.planes.first.bytes,
+        metadata: InputImageMetadata(
+          size: Size(frame.width.toDouble(), frame.height.toDouble()),
+          rotation: rotation,
+          format: InputImageFormat.nv21,
+          bytesPerRow: frame.planes.first.bytesPerRow,
+        ),
+      );
+      final faces = await _detector.processImage(image);
+      if (!mounted || _camera != camera) return;
+      if (faces.length != 1) {
+        _challenge.reset();
+        _trackingId = null;
+        setState(() => _error = 'Keep exactly one student in view.');
+        return;
+      }
+      final face = faces.single;
+      if (_trackingId != null &&
+          face.trackingId != null &&
+          face.trackingId != _trackingId) {
+        _challenge.reset();
+      }
+      _trackingId = face.trackingId;
+      final complete = _challenge.observe(
+        FaceObservation(
+          leftEyeOpen: face.leftEyeOpenProbability,
+          rightEyeOpen: face.rightEyeOpenProbability,
+          mouthGap: _mouthGap(face),
+          pitch: face.headEulerAngleX,
+          yaw: face.headEulerAngleY,
+        ),
+      );
+      setState(() => _error = null);
+      if (complete) {
+        _capturing = true;
+        await camera.stopImageStream();
+        await _takePhoto();
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = 'Could not check face movement: $error');
+      }
+    } finally {
+      _processingFrame = false;
+    }
+  }
+
+  double? _mouthGap(Face face) {
+    final upper = face.contours[FaceContourType.upperLipBottom]?.points;
+    final lower = face.contours[FaceContourType.lowerLipTop]?.points;
+    if (upper == null || lower == null || upper.isEmpty || lower.isEmpty) {
+      return null;
+    }
+    final upperMiddle = upper[upper.length ~/ 2];
+    final lowerMiddle = lower[lower.length ~/ 2];
+    return max(0, lowerMiddle.y - upperMiddle.y) / face.boundingBox.height;
   }
 
   Future<void> _takePhoto() async {
@@ -102,6 +199,11 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
       });
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not take a photo: $error');
+      _capturing = false;
+      if (mounted && camera.value.isInitialized) {
+        _challenge = FaceMovementChallenge();
+        await camera.startImageStream(_processFrame);
+      }
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -132,6 +234,7 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _camera?.dispose();
+    _detector.close();
     super.dispose();
   }
 
@@ -164,7 +267,15 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
               ),
               const SizedBox(height: 12),
               const Text(
-                'Check that the selected student is in front of you. Ask them to face the camera in good light. Do not scan a printed photo or screen.',
+                'Keep the selected student in front of you in good light. The app will ask for a random movement, then take the photo automatically. Do not scan a printed photo or screen.',
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _photo == null
+                    ? _challenge.prompt
+                    : 'Review the photo before submitting',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -211,23 +322,25 @@ class _FaceCheckInScreenState extends State<FaceCheckInScreen>
                   ),
                 ),
               const SizedBox(height: 16),
-              if (_photo == null)
-                FilledButton.icon(
-                  onPressed:
-                      _working || camera == null || !camera.value.isInitialized
-                      ? null
-                      : _takePhoto,
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Take photo'),
-                )
-              else
+              if (_photo != null)
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _working
                             ? null
-                            : () => setState(() => _photo = null),
+                            : () {
+                                setState(() {
+                                  _photo = null;
+                                  _capturing = false;
+                                  _challenge = FaceMovementChallenge();
+                                });
+                                if (camera == null || !camera.value.isInitialized) {
+                                  _startCamera();
+                                } else {
+                                  camera.startImageStream(_processFrame);
+                                }
+                              },
                         child: const Text('Retake'),
                       ),
                     ),
