@@ -1,0 +1,119 @@
+name: Build SchoolBase Android APK
+
+on:
+  push:
+    tags:
+      - 'build-*'
+  workflow_dispatch:
+    inputs:
+      mobile_repository:
+        description: Source repository (blank uses this deployment repository)
+        required: false
+      mobile_ref:
+        description: Mobile branch, tag, or full commit SHA
+        required: true
+        default: mobile/feat-runtime-templating
+      api_base:
+        description: HTTPS backend URL ending in /api/v1
+        required: true
+        default: https://api.demo.schoolbase.africa/api/v1
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Validate inputs
+        env:
+          MOBILE_REF: ${{ inputs.mobile_ref || 'mobile/feat-runtime-templating' }}
+          API_BASE: ${{ inputs.api_base || 'https://api.demo.schoolbase.africa/api/v1' }}
+        shell: bash
+        run: |
+          if [[ "$MOBILE_REF" =~ ^[0-9a-fA-F]{7,39}$ ]]; then
+            echo "Use a branch, tag, or full 40-character commit SHA for mobile_ref." >&2
+            exit 1
+          fi
+          if [[ ! "$API_BASE" =~ ^https://[^[:space:]]+/api/v1/?$ ]]; then
+            echo "api_base must be an HTTPS URL ending in /api/v1." >&2
+            exit 1
+          fi
+
+      - name: Check out mobile app
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ inputs.mobile_repository || github.repository }}
+          ref: ${{ inputs.mobile_ref || 'mobile/feat-runtime-templating' }}
+          path: SchoolBase-Mobile
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: SchoolBase-Mobile
+        run: flutter pub get --enforce-lockfile
+
+      - name: Analyze and test
+        working-directory: SchoolBase-Mobile
+        run: |
+          flutter analyze --no-pub
+          flutter test --no-pub
+
+      - name: Build installable test APK
+        working-directory: SchoolBase-Mobile
+        env:
+          API_BASE: ${{ inputs.api_base || 'https://api.demo.schoolbase.africa/api/v1' }}
+        shell: bash
+        run: flutter build apk --debug --dart-define="SCHOOLBASE_API_BASE=$API_BASE"
+
+      - name: Prepare artifact and checksum
+        id: artifact
+        working-directory: SchoolBase-Mobile
+        shell: bash
+        run: |
+          mobile_sha=$(git rev-parse HEAD)
+          apk_name="schoolbase-android-debug-${mobile_sha:0:12}-${GITHUB_RUN_ID}.apk"
+          mkdir -p ../apk-artifact
+          cp build/app/outputs/flutter-apk/app-debug.apk "../apk-artifact/$apk_name"
+          cd ../apk-artifact
+          sha256sum "$apk_name" > "$apk_name.sha256"
+          echo "mobile_sha=$mobile_sha" >> "$GITHUB_OUTPUT"
+          echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolbase-android-debug-${{ steps.artifact.outputs.mobile_sha }}-${{ github.run_id }}
+          path: apk-artifact/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish build details
+        env:
+          API_BASE: ${{ inputs.api_base || 'https://api.demo.schoolbase.africa/api/v1' }}
+          APK_NAME: ${{ steps.artifact.outputs.apk_name }}
+          MOBILE_SHA: ${{ steps.artifact.outputs.mobile_sha }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+        shell: bash
+        run: |
+          {
+            echo '### SchoolBase Android test APK'
+            echo "Mobile commit: \`$MOBILE_SHA\`"
+            echo "Backend: \`$API_BASE\`"
+            echo "APK: \`$APK_NAME\`"
+            echo "[Download APK and checksum]($ARTIFACT_URL)"
+            echo 'This debug APK uses a temporary signing key and is for device testing.'
+          } >> "$GITHUB_STEP_SUMMARY"

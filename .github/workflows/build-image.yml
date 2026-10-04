@@ -1,6 +1,9 @@
 name: Build SchoolBase image
 
 on:
+  push:
+    tags:
+      - 'build-*'
   workflow_dispatch:
     inputs:
       frontend_ref:
@@ -26,8 +29,8 @@ jobs:
 
       - name: Validate source refs
         env:
-          FRONTEND_REF: ${{ inputs.frontend_ref }}
-          BACKEND_REF: ${{ inputs.backend_ref }}
+          FRONTEND_REF: ${{ inputs.frontend_ref || 'feat/runtime-templating' }}
+          BACKEND_REF: ${{ inputs.backend_ref || 'feat/runtime-templating' }}
         shell: bash
         run: |
           for source_ref in "$FRONTEND_REF" "$BACKEND_REF"; do
@@ -41,14 +44,14 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: schoolbaseafrica/SchoolBase-FE
-          ref: ${{ inputs.frontend_ref }}
+          ref: ${{ inputs.frontend_ref || 'feat/runtime-templating' }}
           path: SchoolBase-FE
 
       - name: Check out backend
         uses: actions/checkout@v5
         with:
           repository: schoolbaseafrica/SchoolBase-BE
-          ref: ${{ inputs.backend_ref }}
+          ref: ${{ inputs.backend_ref || 'feat/runtime-templating' }}
           path: SchoolBase-BE
 
       - name: Resolve immutable image metadata

@@ -14,6 +14,7 @@ secrets, resource limits, and frontend/API domains.
 | `compose.school.yml` | Reusable application definition; create one Coolify resource per school |
 | `Dockerfile.combined` | Builds the combined Next.js and NestJS image |
 | `.github/workflows/build-image.yml` | Builds and publishes an immutable GHCR image |
+| `.github/workflows/build-android-apk.yml` | Builds a downloadable Android test APK from a selected mobile ref |
 | `config/*.env.example` | Non-secret configuration templates |
 | `scripts/validate-config.sh` | Rejects missing, weak, or placeholder configuration |
 | `scripts/provision-postgres.sh` | Creates each school's role/database from a Coolify task |
@@ -39,3 +40,24 @@ domain routing, and TLS configuration.
 | St Paul | `stpaul.schoolbase.africa` | `api.stpaul.schoolbase.africa` | `sb_stpaul` | `stpaul` |
 
 Read `docs/COOLIFY.md` before deploying or restoring data.
+
+## Build an Android test APK
+
+In this repository's GitHub **Actions** tab, run **Build SchoolBase Android APK**.
+Choose a committed mobile source ref and the HTTPS API URL for the school,
+ending in `/api/v1`. Until write access to the organization mobile repository
+is available, the default mobile source is the `mobile/feat-runtime-templating`
+branch in this repository, which mirrors the mobile app commit. To build from
+another repository, set `mobile_repository` to its `owner/name` and choose its
+branch, tag, or full commit SHA. The workflow checks the app, builds an
+installable debug APK, and attaches the APK plus its SHA-256 checksum to the run
+for 30 days. The run summary records the mobile commit and backend URL. The
+default URL points to the Demo API.
+
+Pushing a `build-*` tag in this deployment repository starts both the combined
+image and Android APK workflows using their default source refs. Push the
+frontend, backend, and mobile commits before creating that tag.
+
+This APK is signed with a temporary debug key for device testing. Different
+workflow runs may require uninstalling the previous APK before installation.
+Production distribution needs a stable signing key and a final application ID.
