@@ -97,6 +97,10 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-schoolbase}
+      # Optional self-hosted CompreFace verification service. Keep its key server-side.
+      FACE_VERIFY_URL: ${FACE_VERIFY_URL:-}
+      FACE_VERIFY_API_KEY: ${FACE_VERIFY_API_KEY:-}
+      FACE_MATCH_THRESHOLD: ${FACE_MATCH_THRESHOLD:-0.8}
       # Google OAuth (optional)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       # Other
