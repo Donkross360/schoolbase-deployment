@@ -1,22 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'api_config.dart';
 
 class AuthService {
-  final String baseUrl = "https://api.staging.schoolbase.africa";
-
   Future<String?> login(String email, String password) async {
-    // Backdoor for testing
-    if (email.trim() == 'gate@school.com' && password == 'gateman1') {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', 'fake-gateman-token');
-      await prefs.setString('user_role', 'gateman');
-      return null;
-    }
-
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/v1/auth/login'),
+        Uri.parse('$schoolBaseApiBase/auth/login'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -34,7 +26,24 @@ class AuthService {
         if (token != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('auth_token', token);
-          await _fetchAndSaveRole(token);
+          final tokens = data['data'] is Map ? data['data'] as Map : data as Map;
+          if (tokens['refresh_token'] != null) {
+            await prefs.setString('refresh_token', tokens['refresh_token'].toString());
+          }
+          final user = data['user'] ?? data['data']?['user'];
+          if (user is Map && user['role'] != null) {
+            final roles = user['role'] is List ? user['role'] as List : [user['role']];
+            if (roles.isNotEmpty) {
+              final role = roles.map((value) => value.toString().toLowerCase()).firstWhere(
+                (value) => value == 'teacher' || value == 'admin',
+                orElse: () => roles.first.toString().toLowerCase(),
+              );
+              await prefs.setString('user_role', role);
+            }
+            await prefs.setString('user_name', '${user['first_name']} ${user['last_name']}');
+          } else {
+            await _fetchAndSaveRole(token);
+          }
           return null;
         }
       }
@@ -47,7 +56,7 @@ class AuthService {
   Future<void> _fetchAndSaveRole(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/auth/me'),
+        Uri.parse('$schoolBaseApiBase/auth/me'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -61,7 +70,12 @@ class AuthService {
           List roles = (userData['role'] is List)
               ? userData['role']
               : [userData['role']];
-          if (roles.isNotEmpty) role = roles.first.toString().toLowerCase();
+          if (roles.isNotEmpty) {
+            role = roles.map((value) => value.toString().toLowerCase()).firstWhere(
+              (value) => value == 'teacher' || value == 'admin',
+              orElse: () => roles.first.toString().toLowerCase(),
+            );
+          }
         }
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_role', role);
@@ -71,7 +85,7 @@ class AuthService {
         );
       }
     } catch (e) {
-      print("Role error: $e");
+      debugPrint("Role error: $e");
     }
   }
 

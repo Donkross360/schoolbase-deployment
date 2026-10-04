@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
 
@@ -20,7 +21,7 @@ class NfcService {
           },
           onDiscovered: (NfcTag tag) async {
             try {
-              String? tagId = _extractTagId(tag);
+              String? tagId = await _readNdefCardId(tag) ?? _extractTagId(tag);
 
               if (tagId != null) {
                 onTagRead(tagId);
@@ -45,6 +46,24 @@ class NfcService {
   }
 
   // --- HELPER: Extract Serial Number Safely ---
+  Future<String?> _readNdefCardId(NfcTag tag) async {
+    final ndef = Ndef.from(tag);
+    if (ndef == null) return null;
+    final message = await ndef.read();
+    for (final record in message.records) {
+      if (record.type.length != 1 || record.type.first != 0x54) continue;
+      final payload = record.payload;
+      if (payload.length < 2) continue;
+      final languageLength = payload.first & 0x3f;
+      final offset = 1 + languageLength;
+      if (offset >= payload.length) continue;
+      if ((payload.first & 0x80) != 0) continue;
+      final value = utf8.decode(payload.sublist(offset), allowMalformed: false).trim();
+      if (value.isNotEmpty && value.length <= 128) return value;
+    }
+    return null;
+  }
+
   String? _extractTagId(NfcTag tag) {
     List<int>? idBytes;
 

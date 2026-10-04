@@ -5,7 +5,7 @@ import '../services/attendance_service.dart';
 import '../widgets/logout_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -34,10 +34,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).showSnackBar(const SnackBar(content: Text("Syncing offline records...")));
     final AttendanceService service = AttendanceService();
     String result = await service.syncOfflineRecords();
-    if (mounted)
+    if (mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(result)));
+    }
   }
 
   @override

@@ -6,7 +6,7 @@ import '../utils/constants.dart';
 import '../widgets/logout_dialog.dart';
 
 class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({Key? key}) : super(key: key);
+  const AdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +52,7 @@ class AdminDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              "Link physical NFC cards to registered\nstudents or teachers.",
+              "Link physical NFC cards to registered students.",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
@@ -108,7 +108,7 @@ class AdminDashboard extends StatelessWidget {
 }
 
 class UserSearchSheet extends StatelessWidget {
-  const UserSearchSheet({Key? key}) : super(key: key);
+  const UserSearchSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +210,7 @@ class UserSearchSheet extends StatelessWidget {
 
 class ScanDialog extends StatefulWidget {
   final Map<String, dynamic> user;
-  const ScanDialog({Key? key, required this.user}) : super(key: key);
+  const ScanDialog({super.key, required this.user});
   @override
   State<ScanDialog> createState() => _ScanDialogState();
 }
@@ -227,11 +227,12 @@ class _ScanDialogState extends State<ScanDialog> {
   }
 
   void _startLinking() {
+    final adminProvider = context.read<AdminProvider>();
     _nfcService.startSession(
       onTagRead: (cardUid) async {
         setState(() => _status = "Card Found! Linking...");
         // Pass the user type (teacher/student) to the provider
-        String? err = await context.read<AdminProvider>().linkCard(
+        String? err = await adminProvider.linkCard(
           widget.user['id'].toString(),
           cardUid,
           widget.user['type'].toString(),
@@ -245,7 +246,9 @@ class _ScanDialogState extends State<ScanDialog> {
             });
             Future.delayed(
               const Duration(seconds: 2),
-              () => Navigator.pop(context),
+              () {
+                if (mounted) Navigator.pop(context);
+              },
             );
           } else {
             setState(() => _status = "Error: $err");

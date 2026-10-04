@@ -4,7 +4,7 @@ import '../services/database_helper.dart';
 import '../widgets/logout_dialog.dart';
 
 class GatemanHistoryScreen extends StatefulWidget {
-  const GatemanHistoryScreen({Key? key}) : super(key: key);
+  const GatemanHistoryScreen({super.key});
   @override
   State<GatemanHistoryScreen> createState() => _GatemanHistoryScreenState();
 }
@@ -19,6 +19,7 @@ class _GatemanHistoryScreenState extends State<GatemanHistoryScreen> {
 
   void _load() async {
     var r = await DatabaseHelper.instance.getAllUnsynced();
+    if (!mounted) return;
     setState(() => _records = r.reversed.toList());
   }
 
@@ -49,7 +50,7 @@ class _GatemanHistoryScreenState extends State<GatemanHistoryScreen> {
         child: const Icon(Icons.sync),
         onPressed: () async {
           String res = await AttendanceService().syncOfflineRecords();
-          if (mounted) {
+          if (context.mounted) {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(res)));

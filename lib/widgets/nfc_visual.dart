@@ -4,8 +4,7 @@ import '../utils/constants.dart';
 class NfcVisual extends StatelessWidget {
   final Color activeColor;
 
-  const NfcVisual({Key? key, this.activeColor = AppColors.primaryRed})
-    : super(key: key);
+  const NfcVisual({super.key, this.activeColor = AppColors.primaryRed});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +20,7 @@ class NfcVisual extends StatelessWidget {
             height: 220,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: activeColor.withOpacity(0.05),
+              color: activeColor.withValues(alpha: 0.05),
             ),
           ),
 
@@ -31,7 +30,7 @@ class NfcVisual extends StatelessWidget {
             height: 170,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: activeColor.withOpacity(0.15),
+              color: activeColor.withValues(alpha: 0.15),
             ),
           ),
 
@@ -42,10 +41,10 @@ class NfcVisual extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(color: activeColor.withOpacity(0.2), width: 1),
+              border: Border.all(color: activeColor.withValues(alpha: 0.2), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   blurRadius: 15,
                   spreadRadius: 2,
                   offset: const Offset(0, 4),

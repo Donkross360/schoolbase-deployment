@@ -6,10 +6,10 @@ class AttendanceToggle extends StatelessWidget {
   final Function(bool) onToggle;
 
   const AttendanceToggle({
-    Key? key,
+    super.key,
     required this.isCheckInSelected,
     required this.onToggle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

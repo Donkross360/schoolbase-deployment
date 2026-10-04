@@ -3,11 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import 'admin_dashboard.dart';
-import 'gateman_screen.dart';
-import 'gateman_history_screen.dart';
+import 'teacher_attendance_screen.dart';
 
 class MainNavScreen extends StatelessWidget {
-  const MainNavScreen({Key? key}) : super(key: key);
+  const MainNavScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,19 +28,15 @@ class _MainContentState extends State<_MainContent> {
     List<Widget> screens = [];
     List<BottomNavigationBarItem> items = [];
 
-    if (role == 'admin') {
+    if (role == 'teacher') {
+      screens = [const TeacherAttendanceScreen()];
+      items = [];
+    } else if (role == 'admin') {
       // Admin View
       screens = [const AdminDashboard()];
       items = []; // No bottom bar for Admin (single screen)
-    } else if (role == 'gateman') {
-      // Gateman View
-      screens = [const GatemanScreen(), const GatemanHistoryScreen()];
-      items = const [
-        BottomNavigationBarItem(icon: Icon(Icons.security), label: 'Scanner'),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-      ];
     } else {
-      // Fallback / Student (Restricted)
+      // The legacy gate endpoint is unavailable on the current backend.
       return Scaffold(
         body: Center(
           child: Column(
@@ -49,7 +44,7 @@ class _MainContentState extends State<_MainContent> {
             children: [
               const Icon(Icons.block, size: 80, color: Colors.red),
               const SizedBox(height: 20),
-              const Text("Access Restricted", style: TextStyle(fontSize: 20)),
+              const Text("Attendance unavailable for this role", style: TextStyle(fontSize: 20)),
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => context.read<AuthProvider>().logout(),

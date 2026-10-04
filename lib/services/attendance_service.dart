@@ -9,7 +9,7 @@ class AttendanceService {
 
   Future<bool> _isConnected() async {
     var result = await (Connectivity().checkConnectivity());
-    if (result == ConnectivityResult.none) return false;
+    if (result.contains(ConnectivityResult.none)) return false;
     return true;
   }
 

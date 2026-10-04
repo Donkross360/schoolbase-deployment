@@ -1,40 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'api_client.dart';
 
 class AdminService {
-  final String baseUrl = "https://api.staging.schoolbase.africa";
 
-  // --- SEARCH USERS (Students & Teachers) ---
+  // --- SEARCH STUDENTS ---
   Future<List<dynamic>> searchUsers(String query) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    if (token == null) return [];
-
     List<dynamic> allResults = [];
     try {
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-
-      String searchParam = query.isEmpty ? "" : "?search=$query";
-
-      // Fetch BOTH Students and Teachers
-      final responses = await Future.wait([
-        http.get(
-          Uri.parse('$baseUrl/api/v1/students$searchParam'),
-          headers: headers,
-        ),
-        http.get(
-          Uri.parse('$baseUrl/api/v1/teachers$searchParam'),
-          headers: headers,
-        ),
-      ]);
-
-      // Process Both
-      _processResponse(responses[0], 'student', allResults);
-      _processResponse(responses[1], 'teacher', allResults);
+      final response = await ApiClient.request(
+        'GET', '/students', query: {'search': query, 'limit': '50'},
+      );
+      _processResponse(response, 'student', allResults);
 
       return allResults;
     } catch (e) {
@@ -48,29 +25,22 @@ class AdminService {
     String nfcId,
     String userType,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-
     try {
       // Determine endpoint based on type
-      String endpoint = userType.toLowerCase() == 'teacher'
-          ? 'teachers'
-          : 'students';
+      if (userType.toLowerCase() == 'teacher') {
+        return 'Teacher card enrollment is not available yet.';
+      }
 
-      final response = await http.patch(
-        Uri.parse('$baseUrl/api/v1/$endpoint/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'nfc_id': nfcId}),
+      final response = await ApiClient.request(
+        'POST', '/attendance/mobile/students/$userId/card',
+        body: {'cardId': nfcId},
       );
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
         return null;
       } else {
         final data = jsonDecode(response.body);
-        return data['message'] ?? "Failed to link card.";
+        return data['message']?.toString() ?? "Failed to link card.";
       }
     } catch (e) {
       return 'Connection error: $e';
@@ -100,7 +70,7 @@ class AdminService {
         list.add({
           'id': item['id'],
           'name': "${item['first_name']} ${item['last_name']}",
-          'school_id': item['matric_no'] ?? item['email'] ?? 'ID:${item['id']}',
+          'school_id': item['registration_number'] ?? item['email'] ?? 'ID:${item['id']}',
           'type': type, // 'student' or 'teacher'
         });
       }

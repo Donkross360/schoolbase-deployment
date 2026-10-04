@@ -7,7 +7,7 @@ import '../utils/constants.dart';
 import '../widgets/nfc_visual.dart';
 
 class GatemanScreen extends StatefulWidget {
-  const GatemanScreen({Key? key}) : super(key: key);
+  const GatemanScreen({super.key});
 
   @override
   State<GatemanScreen> createState() => _GatemanScreenState();

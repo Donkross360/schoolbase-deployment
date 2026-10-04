@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/admin_service.dart';
 
 class AdminHistoryScreen extends StatelessWidget {
-  const AdminHistoryScreen({Key? key}) : super(key: key);
+  const AdminHistoryScreen({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(

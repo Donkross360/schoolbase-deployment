@@ -1,107 +1,30 @@
+# SchoolBase Mobile
 
-# SchoolBase 📚
+Flutter companion app for SchoolBase attendance.
 
-Welcome to **SchoolBase**, your friendly neighborhood school attendance management app! Built with Flutter, this app makes tracking student attendance as easy as a tap. Whether you're an admin managing the system or a gateman scanning cards at the gate, SchoolBase keeps everything organized and secure.
+## Current attendance flow
 
-## 🌟 What Makes SchoolBase Special?
+Teachers sign in on an NFC capable Android phone, select an assigned class in the active academic session, and scan a student's card. The app confirms attendance only after the backend records it. A repeated scan shows that the student was already marked present. An internet connection is required; a failed request is not counted as attendance.
 
-SchoolBase is designed to simplify school attendance with modern technology. Using NFC cards, students can check in and out effortlessly, while admins and gate staff have the tools they need to manage everything smoothly.
+Admins can link a student's existing card by scanning it in Card Management. An NDEF text record is used as the card ID when present; otherwise the hardware UID is used. Web generated `NFC-...` IDs must be written as NDEF text to the physical tag before use. Existing IDs restored from the database remain valid when the tag contains the same text.
 
-### Key Features
-- **🔐 Secure Authentication**: Login with your email and password to access role-specific features.
-- **👥 Role-Based Access**: Different dashboards for admins and gatemen – everyone sees what they need.
-- **📱 NFC Card Scanning**: Tap to check in or out. It's quick, contactless, and reliable.
-- **📊 Attendance Tracking**: View real-time attendance records and history.
-- **🛠️ Admin Tools**: Register and manage NFC cards for students and staff.
-- **📶 Offline Support**: Works even without internet – data syncs when connected.
-- **🎨 Clean UI**: Intuitive design with a red theme that's easy on the eyes.
+The earlier gate attendance screen is unavailable because `/attendance/gate` is absent from the current backend. Face and fingerprint identification are not enabled.
 
-## 🚀 Getting Started
+The school policy endpoint controls which methods appear to teachers. NFC is the
+only available method until a face recognition provider and a reader capture
+provider are integrated. `FingerprintCapture` is the replaceable mobile reader
+interface; its default provider ID is `secugen`. The SecuGen channel currently
+reports unavailable because the vendor Android SDK is not bundled.
 
-Ready to get SchoolBase up and running? Follow these simple steps!
+## Run
 
-### Prerequisites
-- Flutter SDK (version 3.10.1 or higher)
-- Dart SDK (included with Flutter)
-- An Android or iOS device with NFC support (for full functionality)
+Install Flutter and an Android device with NFC, then run:
 
-### Installation
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/schoolbaseafrica/SchoolBase-Mobile.git
-   cd school_base
-   ```
+```bash
+flutter pub get
+flutter run --dart-define=SCHOOLBASE_API_BASE=https://your-school.example/api/v1
+```
 
-2. **Install dependencies**:
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run the app**:
-   ```bash
-   flutter run
-   ```
-
-That's it! The app will launch on your connected device or emulator.
-
-### Building for Production
-- **Android APK**:
-  ```bash
-  flutter build apk --release
-  ```
-- **iOS**:
-  ```bash
-  flutter build ios --release
-  ```
-
-## 📖 How to Use SchoolBase
-
-### For Admins
-1. Log in with your admin credentials.
-2. Use the dashboard to register new NFC cards.
-3. Monitor attendance records and manage the system.
-
-### For Gatemen
-1. Log in as a gateman.
-2. Switch between "Check-In" and "Check-Out" modes.
-3. Scan NFC cards as students arrive or leave.
-4. View attendance history on the History tab.
-
-### For Students
-- Just tap your NFC card when prompted. No app needed on your side!
-
-## 🛠️ Technologies Under the Hood
-
-SchoolBase is built with love using:
-- **Flutter**: For cross-platform magic
-- **Dart**: The language that makes it all happen
-- **Provider**: State management that's as smooth as butter
-- **NFC Manager**: For seamless card scanning
-- **SQLite**: Local database for offline awesomeness
-- **HTTP**: For syncing data when online
-
-## 🤝 Contributing
-
-We'd love your help to make SchoolBase even better! Here's how you can contribute:
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-idea`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-idea`)
-5. Open a Pull Request
-
-Please make sure your code follows our style guidelines and includes tests where appropriate.
-
-## 📄 License
+The default backend URL is `https://demo.schoolbase.africa/api/v1`. Apply the backend NFC attendance migration before using this app. A real device test is needed to verify NFC tag compatibility and the full check-in flow.
 
 This project is private and not licensed for public use.
-
-## 📞 Support
-
-Having trouble? Found a bug? Reach out to our support team or open an issue on GitHub.
-
-dumebinwankwo87@gmail.com
-
-Made with ❤️ for schools everywhere. Happy attending!
-=======
-# SchoolBase-Mobile
-
