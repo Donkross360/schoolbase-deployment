@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'build-*'
+      - 'apk-*'
   workflow_dispatch:
     inputs:
       mobile_repository:
@@ -76,7 +77,17 @@ jobs:
         env:
           API_BASE: ${{ inputs.api_base || 'https://api.demo.schoolbase.africa/api/v1' }}
         shell: bash
-        run: flutter build apk --debug --dart-define="SCHOOLBASE_API_BASE=$API_BASE"
+        run: |
+          set -o pipefail
+          if ! flutter build apk --debug --dart-define="SCHOOLBASE_API_BASE=$API_BASE" 2>&1 | tee build-apk.log; then
+            {
+              echo '### Android build error'
+              echo '```text'
+              tail -n 100 build-apk.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: Prepare artifact and checksum
         id: artifact

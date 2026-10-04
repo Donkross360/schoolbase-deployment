@@ -57,6 +57,8 @@ default URL points to the Demo API.
 Pushing a `build-*` tag in this deployment repository starts both the combined
 image and Android APK workflows using their default source refs. Push the
 frontend, backend, and mobile commits before creating that tag.
+An `image-*` tag starts only the image workflow; an `apk-*` tag starts only
+the APK workflow.
 
 This APK is signed with a temporary debug key for device testing. Different
 workflow runs may require uninstalling the previous APK before installation.

@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'build-*'
+      - 'image-*'
   workflow_dispatch:
     inputs:
       frontend_ref:
