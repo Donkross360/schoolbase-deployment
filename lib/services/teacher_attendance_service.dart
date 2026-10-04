@@ -1,18 +1,57 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'api_client.dart';
 
 class TeacherAttendanceService {
+  Future<List<Map<String, dynamic>>> students(String classId) async {
+    final response = await ApiClient.request(
+      'GET',
+      '/attendance/mobile/classes/$classId/students',
+    );
+    if (response.statusCode != 200) throw StateError(_error(response));
+    final decoded = jsonDecode(response.body);
+    final rows = decoded is List ? decoded : decoded['data'] as List? ?? [];
+    return rows.map((row) => Map<String, dynamic>.from(row as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> markFace(
+    String classId,
+    String studentId,
+    Uint8List photo,
+  ) async {
+    final response = await ApiClient.postCameraPhoto(
+      '/attendance/mobile/face-check-in',
+      {'classId': classId, 'studentId': studentId, 'clientEventId': _eventId()},
+      photo,
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw StateError(_error(response));
+    }
+    final decoded = jsonDecode(response.body);
+    return Map<String, dynamic>.from(
+      decoded is Map && decoded['data'] is Map
+          ? decoded['data'] as Map
+          : decoded as Map,
+    );
+  }
+
   Future<Map<String, dynamic>> methods() async {
-    final response = await ApiClient.request('GET', '/attendance/mobile/methods');
+    final response = await ApiClient.request(
+      'GET',
+      '/attendance/mobile/methods',
+    );
     if (response.statusCode != 200) throw StateError(_error(response));
     final decoded = jsonDecode(response.body);
     return Map<String, dynamic>.from(decoded['data'] as Map);
   }
 
   Future<List<Map<String, String>>> classes() async {
-    final response = await ApiClient.request('GET', '/attendance/mobile/classes');
+    final response = await ApiClient.request(
+      'GET',
+      '/attendance/mobile/classes',
+    );
     if (response.statusCode != 200) throw StateError(_error(response));
     final decoded = jsonDecode(response.body);
     final rows = decoded is List ? decoded : (decoded['data'] as List? ?? []);
@@ -32,14 +71,19 @@ class TeacherAttendanceService {
       'clientEventId': _eventId(),
     };
     final response = await ApiClient.request(
-      'POST', '/attendance/mobile/nfc-tap', body: body,
+      'POST',
+      '/attendance/mobile/nfc-tap',
+      body: body,
     );
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw StateError(_error(response));
     }
     final decoded = jsonDecode(response.body);
-    return Map<String, dynamic>.from(decoded is Map && decoded['data'] is Map
-        ? decoded['data'] as Map : decoded as Map);
+    return Map<String, dynamic>.from(
+      decoded is Map && decoded['data'] is Map
+          ? decoded['data'] as Map
+          : decoded as Map,
+    );
   }
 
   String _error(http.Response response) {
@@ -48,7 +92,9 @@ class TeacherAttendanceService {
       final message = decoded['message'];
       if (message is List) return message.join(', ');
       if (message != null) return message.toString();
-    } catch (_) { /* Use status below. */ }
+    } catch (_) {
+      /* Use status below. */
+    }
     return 'Request failed (${response.statusCode})';
   }
 
