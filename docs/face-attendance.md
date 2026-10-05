@@ -1,20 +1,142 @@
-# Face attendance setup
+# Enable face attendance in the Coolify deployment
 
-Face attendance uses the teacher's Android camera and a self-hosted CompreFace **Face Verification** service. The backend sends the fresh camera image and one admin-approved student photo for a one-to-one comparison. CompreFace does not need a collection of student face embeddings for this integration.
+The Git-based `compose.infrastructure.yml` deploys shared PostgreSQL, MinIO,
+and CompreFace in one Coolify resource. CompreFace has its own PostgreSQL
+container and named volume; it does not use either school's database. Each
+school app uses `compose.school.yml` and joins the same `schoolbase-shared`
+network. The older root `docker-compose.yml` is for the retired host-managed
+deployment and is not used by the Coolify runbook.
 
-1. Deploy [CompreFace](https://github.com/exadel-inc/CompreFace/blob/master/docs/Installation-options.md) on a server reachable **from the SchoolBase backend**. Its default deployment runs several containers and requires an x86 CPU with AVX support. Keep the CompreFace API private to the school network.
-2. In the CompreFace dashboard, create a **Face Verification** service and copy its API key. The recognition and detection service keys are different and will not work for the verification endpoint.
-3. Configure the SchoolBase backend environment:
+## 1. Enable CompreFace in the existing infrastructure resource
 
-   ```text
-   FACE_VERIFY_URL=http://compreface:8000
-   FACE_VERIFY_API_KEY=<face-verification-service-key>
-   FACE_MATCH_THRESHOLD=0.8
-   ```
+The Coolify server needs an x86 processor with AVX. Check with
+`lscpu | grep -i avx` before deployment. [CompreFace requirements](https://github.com/exadel-inc/CompreFace/blob/master/docs/Installation-options.md)
 
-   `FACE_VERIFY_URL` is the CompreFace base URL. The backend appends `/api/v1/verification/verify`. Keep the URL and key on the backend; never put the key in the Android APK or browser. Choose a similarity threshold after testing with the school's cameras, lighting and student photos. A higher value rejects more legitimate check-ins but reduces false matches. The default is 0.8.
-4. Deploy the new combined image and restart the backend. In Admin Settings, enable **Face** alongside or instead of NFC. Face is unavailable if the URL or key is missing.
-5. Each student takes a new photo in their portal settings. When using a separate phone, they can scan the short-lived QR code shown beside the capture link. On the admin's student page, visually review and approve the photo. Replacing the photo automatically removes approval.
-6. Teachers can select an approved student from their assigned class in the Android app or the teacher web portal. The Android app asks the student to perform one randomly chosen movement (blink, open mouth, nod, or turn left/right), observes the movement and return to neutral, then takes a fresh photo for verification. The web portal supports a camera on a phone, tablet, or laptop, but relies on the teacher to supervise the student rather than checking a movement automatically.
+Check free memory and CPU. The default API and admin Java heap limits in
+`compose.infrastructure.yml` are 4 GB and 1 GB, plus the face-processing
+service and CompreFace's separate PostgreSQL container. Adjust
+`COMPREFACE_API_JAVA_OPTS` and `COMPREFACE_ADMIN_JAVA_OPTS` only after
+checking capacity. [CompreFace release defaults](https://raw.githubusercontent.com/exadel-inc/CompreFace/master/.env)
 
-The movement prompt is a basic on-device presence check; it is not certified liveness detection and a replayed video or altered app may defeat it. Keep the teacher present and do not use this flow as unattended or high-security identity proof. Failed comparisons do not mark attendance; use the school's normal correction process when a legitimate student cannot be verified. The backend does not save the check-in camera image; it stores the attendance result and match score. See [CompreFace's verification API](https://github.com/exadel-inc/CompreFace/blob/master/docs/Rest-API-description.md#face-verification-service) for the provider contract.
+Commit and push the infrastructure Compose change. In the existing shared
+infrastructure resource, reload the Compose definition from the selected Git
+branch. Keep all current PostgreSQL and MinIO variables unchanged. Add a new,
+unique `COMPREFACE_DB_PASSWORD` in **Configuration → Environment Variables**;
+the CompreFace database is independent of `POSTGRES_ADMIN_PASSWORD` and the
+school database passwords. The optional values in
+`config/infrastructure.env.example` include a pinned CompreFace image version,
+dashboard port, and Java heap settings. Save and redeploy the infrastructure
+resource. No second Coolify resource or pasted upstream YAML is needed.
+
+The infrastructure Compose file includes CompreFace's five services and a
+persistent volume named `schoolbase-compreface-postgres-data`. It hard-codes
+`SAVE_IMAGES_TO_DB=false`, so submitted verification images are not retained
+in CompreFace's database. The dashboard binds only to host loopback port
+`18000` by default and has no public domain. The frontend joins both its
+private CompreFace network and `schoolbase-shared`, where its DNS alias is
+`schoolbase-compreface`. Schoolbase reaches it at
+`http://schoolbase-compreface` on container port 80. [CompreFace upstream
+Compose](https://github.com/exadel-inc/CompreFace/blob/master/docker-compose.yml)
+
+Wait until all five CompreFace components are running. The first startup can
+take over 30 seconds; check their Coolify logs if one fails. [CompreFace startup
+guidance](https://github.com/exadel-inc/CompreFace/blob/master/docs/Installation-options.md)
+
+To open its dashboard privately, create an SSH tunnel from your computer:
+
+```bash
+ssh -L 18000:127.0.0.1:18000 <ssh-user>@<coolify-server-ip>
+```
+
+Keep that SSH session open and visit `http://localhost:18000/login` in your
+browser. If you changed `COMPREFACE_DASHBOARD_PORT`, use that port in both
+places.
+
+## 2. Create verification services and keys
+
+In the CompreFace dashboard, create an application for SchoolBase. For **each
+school**, create a service with type **VERIFICATION** and copy that service's
+API key. Use separate keys for Demo and St Paul so either school's key can be
+rotated independently. SchoolBase compares the submitted live photo directly
+with the student's approved reference photo; CompreFace does not need a student
+face collection for this flow. [CompreFace service types](https://github.com/exadel-inc/CompreFace/blob/master/docs/Face-services-and-plugins.md#face-verification), [CompreFace verification API](https://github.com/exadel-inc/CompreFace/blob/master/docs/Rest-API-description.md#face-verification-service)
+
+## 3. Build and manually deploy the SchoolBase image in Coolify
+
+Use the existing image release flow. In the deployment repository's GitHub
+Actions, run **Build SchoolBase image** with the intended frontend and backend
+refs. Wait for the smoke test and image publish to succeed. Copy the complete
+`SCHOOLBASE_IMAGE=...` value from the workflow summary.
+
+For each school, open its existing SchoolBase Compose Application in Coolify and
+go to **Configuration → Environment Variables**. Update `SCHOOLBASE_IMAGE` to
+the copied immutable image reference; do not use `latest`. After setting the
+face variables in the next step, save and manually trigger the Coolify
+deployment as you normally do. `compose.school.yml` uses `pull_policy: always`,
+so this deploy pulls the image you selected. The GitHub image build and the
+Coolify deployment are separate steps. [SchoolBase Coolify
+runbook](COOLIFY.md#1-build-the-application-image), [Coolify environment
+variables](https://coolify.io/docs/services/configuration/environment-variables)
+
+## 4. Add the provider settings to each SchoolBase Coolify resource
+
+Open a school's SchoolBase **Application** in Coolify and go to
+**Configuration → Environment Variables**. Add:
+
+```text
+FACE_VERIFY_URL=http://schoolbase-compreface
+FACE_VERIFY_API_KEY=<that-school-verification-service-key>
+FACE_MATCH_THRESHOLD=0.8
+```
+
+These variables must be present in Coolify and mapped into the app container by
+`compose.school.yml`.
+The URL is the internal Coolify network alias and must be the base URL only;
+SchoolBase appends `/api/v1/verification/verify`. Do not use
+`http://compreface:8000` or a public URL: this deployment uses
+`schoolbase-shared`, and the API is reached inside the Docker network on port
+80. Do not put the API key in a browser variable or in the Android app.
+
+Repeat this step on every school's SchoolBase resource, using that school's
+verification key. `FACE_MATCH_THRESHOLD=0.8` is the current starting value;
+test with the school's devices and lighting before changing it. Raising the
+value makes matching stricter and can reject more genuine check-ins.
+
+With `SCHOOLBASE_IMAGE` and the `FACE_*` variables set, save and manually deploy
+that SchoolBase resource. Production database migrations run automatically at
+NestJS startup; the face attendance migration adds the required student photo
+approval and attendance audit fields.
+
+## 5. Enable Face and enrol students
+
+In that school's SchoolBase admin portal, open **Settings → Attendance**, enable
+**Face**, and save. The admin settings report Face as configured when both the
+URL and key are present. This confirms environment configuration, not provider
+health; finish the real check-in test to confirm network access and the key.
+
+Each student must take a new photo in their portal settings. The admin reviews
+and approves it on the student's page. Replacing the photo clears its approval.
+Then a teacher can check the student in from the Android app or web portal.
+
+## Troubleshooting
+
+- **Face is still “not configured”:** in that school's Coolify Application,
+  confirm all three `FACE_*` entries are saved and redeploy. Make sure the
+  running Compose definition includes their environment mappings.
+- **Provider timeout or unavailable:** confirm the SchoolBase app and
+  `compreface-fe` both join `schoolbase-shared`, that CompreFace is running, and
+  that `schoolbase-compreface` resolves from the SchoolBase app's Coolify
+  terminal.
+- **CompreFace rejects the key:** confirm it belongs to that school's
+  **VERIFICATION** service, not Recognition or Detection.
+- **Student cannot be verified:** confirm the reference photo has been
+  captured and approved, and test image quality and the threshold. Failed
+  comparisons do not record attendance.
+
+The Android random movement prompt is a basic on-device presence check, not
+certified liveness detection; a replay or modified app could defeat it. Keep a
+teacher present. The web camera flow also relies on teacher supervision. The
+SchoolBase backend does not retain the live check-in image; CompreFace image
+storage should remain disabled as described above. SchoolBase retains the
+student's approved reference photo in MinIO and records the attendance result
+and similarity score.

@@ -1,7 +1,8 @@
 # SchoolBase deployment
 
 This repository deploys multiple isolated SchoolBase schools on one Coolify
-server. PostgreSQL and MinIO are shared infrastructure. Each school has its own
+server. PostgreSQL, MinIO, and private CompreFace face verification run in the
+shared infrastructure Compose resource. Each school has its own
 application container, database role and database, MinIO user and bucket,
 secrets, resource limits, and frontend/API domains.
 
@@ -9,7 +10,7 @@ secrets, resource limits, and frontend/API domains.
 
 | Path | Purpose |
 | --- | --- |
-| `compose.infrastructure.yml` | Shared PostgreSQL and MinIO stack |
+| `compose.infrastructure.yml` | Shared PostgreSQL and MinIO, plus private CompreFace verification stack |
 | `Dockerfile.infrastructure-*` | Adds Coolify provisioning commands to the shared service images |
 | `compose.school.yml` | Reusable application definition; create one Coolify resource per school |
 | `Dockerfile.combined` | Builds the combined Next.js and NestJS image |

@@ -43,6 +43,7 @@ jobs:
       DEMO_MINIO_SECRET_KEY: ci-demo-minio-secret-key
       STPAUL_MINIO_SECRET_KEY: ci-stpaul-minio-secret-key
       RESTORE_MINIO_SECRET_KEY: ci-restore-minio-secret-key
+      COMPREFACE_DB_PASSWORD: ci-compreface-database-password
       EXPECTED_TABLE_COUNT: 1
       MINIO_PUBLIC_URL: http://127.0.0.1:9000
     steps:
@@ -54,7 +55,7 @@ jobs:
       - name: Start shared services
         run: |
           docker network create coolify
-          docker compose -f compose.infrastructure.yml up -d --wait
+          docker compose -f compose.infrastructure.yml up -d --wait postgres minio
 
       - name: Provision both schools twice
         run: |

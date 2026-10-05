@@ -84,11 +84,104 @@ services:
         max-size: "20m"
         max-file: "5"
 
+  # CompreFace runs in this infrastructure stack, but uses its own database.
+  compreface-postgres-db:
+    image: exadel/compreface-postgres-db:${COMPREFACE_VERSION:-1.2.0}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: compreface
+      POSTGRES_PASSWORD: ${COMPREFACE_DB_PASSWORD:?set COMPREFACE_DB_PASSWORD}
+      POSTGRES_DB: frs
+    volumes:
+      - compreface_postgres_data:/var/lib/postgresql/data
+    networks:
+      - compreface_internal
+
+  compreface-api:
+    image: exadel/compreface-api:${COMPREFACE_VERSION:-1.2.0}
+    restart: unless-stopped
+    depends_on:
+      - compreface-postgres-db
+    environment:
+      POSTGRES_USER: compreface
+      POSTGRES_PASSWORD: ${COMPREFACE_DB_PASSWORD:?set COMPREFACE_DB_PASSWORD}
+      POSTGRES_URL: jdbc:postgresql://compreface-postgres-db:5432/frs
+      SPRING_PROFILES_ACTIVE: dev
+      API_JAVA_OPTS: ${COMPREFACE_API_JAVA_OPTS:--Xmx4g}
+      SAVE_IMAGES_TO_DB: "false"
+      MAX_FILE_SIZE: 5MB
+      MAX_REQUEST_SIZE: 10MB
+      CONNECTION_TIMEOUT: "10000"
+      READ_TIMEOUT: "60000"
+    networks:
+      - compreface_internal
+
+  compreface-admin:
+    image: exadel/compreface-admin:${COMPREFACE_VERSION:-1.2.0}
+    restart: unless-stopped
+    depends_on:
+      - compreface-postgres-db
+      - compreface-api
+    environment:
+      POSTGRES_USER: compreface
+      POSTGRES_PASSWORD: ${COMPREFACE_DB_PASSWORD:?set COMPREFACE_DB_PASSWORD}
+      POSTGRES_URL: jdbc:postgresql://compreface-postgres-db:5432/frs
+      SPRING_PROFILES_ACTIVE: dev
+      ENABLE_EMAIL_SERVER: "false"
+      EMAIL_HOST: ""
+      EMAIL_USERNAME: ""
+      EMAIL_FROM: ""
+      EMAIL_PASSWORD: ""
+      ADMIN_JAVA_OPTS: ${COMPREFACE_ADMIN_JAVA_OPTS:--Xmx1g}
+      MAX_FILE_SIZE: 5MB
+      MAX_REQUEST_SIZE: 10MB
+    networks:
+      - compreface_internal
+
+  compreface-core:
+    image: exadel/compreface-core:${COMPREFACE_VERSION:-1.2.0}
+    restart: unless-stopped
+    environment:
+      ML_PORT: "3000"
+      IMG_LENGTH_LIMIT: "640"
+      UWSGI_PROCESSES: "2"
+      UWSGI_THREADS: "1"
+    networks:
+      - compreface_internal
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:3000/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  compreface-fe:
+    image: exadel/compreface-fe:${COMPREFACE_VERSION:-1.2.0}
+    restart: unless-stopped
+    labels:
+      traefik.enable: "false"
+    depends_on:
+      - compreface-api
+      - compreface-admin
+    ports:
+      - "127.0.0.1:${COMPREFACE_DASHBOARD_PORT:-18000}:80"
+    environment:
+      CLIENT_MAX_BODY_SIZE: 10M
+      PROXY_READ_TIMEOUT: 60000ms
+      PROXY_CONNECT_TIMEOUT: 10000ms
+    networks:
+      compreface_internal: {}
+      schoolbase_shared:
+        aliases:
+          - schoolbase-compreface
+
 volumes:
   postgres_data:
     name: schoolbase-postgres-data
   minio_data:
     name: schoolbase-minio-data
+  compreface_postgres_data:
+    name: schoolbase-compreface-postgres-data
 
 networks:
   schoolbase_shared:
@@ -96,3 +189,5 @@ networks:
     driver: bridge
   coolify:
     external: true
+  compreface_internal:
+    internal: true

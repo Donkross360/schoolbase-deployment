@@ -10,7 +10,11 @@ workflow. Select the exact frontend and backend refs. The workflow starts the
 combined image with temporary PostgreSQL and MinIO services and verifies the
 Demo frontend, backend readiness endpoint, and runtime school name. After the
 smoke test passes, it publishes a GHCR tag containing both resolved commit SHAs.
-Record the complete image name; do not replace it with `latest`.
+In each school's Coolify resource, open **Configuration → Environment
+Variables**, copy the complete image reference from the workflow summary into
+`SCHOOLBASE_IMAGE`, save, and manually trigger that resource's deployment. The
+school Compose file uses `pull_policy: always`, so Coolify pulls the selected
+immutable image. Do not replace it with `latest`.
 
 If the GHCR package is private, add read-only GHCR credentials to Coolify before
 creating school resources.
@@ -42,21 +46,31 @@ Create one Git-based Docker Compose resource in Coolify:
 - environment variables: values based on `config/infrastructure.env.example`.
 
 Configure only `https://files.schoolbase.africa:9000` as a MinIO domain. Do not
-assign a domain to PostgreSQL or the MinIO console on port `9001`. Do not add
-host port mappings. MinIO joins Coolify's external `coolify` network for proxy
-routing and the private `schoolbase-shared` network for application traffic.
+assign a domain to PostgreSQL, the MinIO console on port `9001`, or CompreFace.
+The CompreFace dashboard binds only to `127.0.0.1:18000` for an SSH tunnel;
+there are no other new host port mappings. MinIO joins Coolify's external
+`coolify` network for proxy routing and the private `schoolbase-shared`
+network for application traffic.
 The `traefik.docker.network=coolify` label makes the proxy select the reachable
 interface when both networks are attached.
 
-Deploy and wait for PostgreSQL and MinIO to become healthy. Confirm that Docker
-network `schoolbase-shared` and volumes `schoolbase-postgres-data` and
-`schoolbase-minio-data` exist.
+Before deploying the CompreFace addition, check that the server has x86 AVX,
+enough free memory for its 4 GB API and 1 GB admin Java heap defaults, and a
+free localhost port `18000`. Set a unique `COMPREFACE_DB_PASSWORD` on the
+same infrastructure resource. Reload the Git Compose definition and redeploy;
+the existing PostgreSQL and MinIO values stay as they are. Wait for PostgreSQL,
+MinIO, and the five CompreFace services to start. Confirm network
+`schoolbase-shared` and volumes `schoolbase-postgres-data`,
+`schoolbase-minio-data`, and `schoolbase-compreface-postgres-data` exist. Use
+the private dashboard and key steps in [face-attendance.md](face-attendance.md).
 
 ## 4. Provision each school without server SSH
 
-Add all variables from `config/infrastructure.env.example` to the infrastructure
-resource in Coolify, then reload the Compose file and redeploy. Keep passwords
-and secret keys marked as secrets. The infrastructure images contain the
+For a new infrastructure resource, add all variables from
+`config/infrastructure.env.example` in Coolify, then deploy. For an existing
+resource, keep its current values and add only `COMPREFACE_DB_PASSWORD` for
+the CompreFace addition. Keep passwords and secret keys marked as secrets.
+The infrastructure images contain the
 provisioning scripts inside the PostgreSQL and MinIO containers.
 
 In the infrastructure resource, open **Scheduled Tasks** and create these four
@@ -134,6 +148,12 @@ Create a separate Git-based Docker Compose application using
 `/compose.school.yml`. Enter values based on `config/school.env.example`, using
 Demo's credentials and immutable image tag.
 
+Face attendance is optional and configured per school. CompreFace is part of
+the shared infrastructure Compose resource. For the private dashboard and
+per-school verification API key setup, follow
+[`docs/face-attendance.md`](face-attendance.md). The `FACE_*` environment
+variables are passed into each school's backend by `compose.school.yml`.
+
 On the `app` service, configure both domains with their target ports:
 
 ```text
@@ -184,6 +204,10 @@ image. Use St Paul's environment values and configure:
 https://stpaul.schoolbase.africa:3000
 https://api.stpaul.schoolbase.africa:3008
 ```
+
+If enabling face attendance for St Paul, configure its own verification service
+key on this application's Coolify resource, as described in
+[`docs/face-attendance.md`](face-attendance.md).
 
 Deploy and run the verification script with the St Paul URLs. Confirm Demo
 remains available during the St Paul deployment.

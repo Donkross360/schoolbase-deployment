@@ -2,8 +2,10 @@
 
 ## Deployment model
 
-One Coolify server runs shared PostgreSQL and MinIO services. Each school runs in
-its own combined application container. The combined container contains the
+One Coolify server runs shared PostgreSQL, MinIO, and the private CompreFace
+verification stack from `compose.infrastructure.yml`. CompreFace has a separate
+PostgreSQL container and volume. Each school runs in its own combined
+application container. The combined container contains the
 Next.js frontend on port `3000` and the NestJS backend on port `3008`.
 
 Each school has its own PostgreSQL database and role, MinIO bucket and user,
@@ -25,6 +27,7 @@ Browser or external client -> API domain -> app:3008
 Next.js server and API proxy -> 127.0.0.1:3008
 NestJS backend -> schoolbase-postgres:5432
 NestJS backend -> schoolbase-minio:9000
+NestJS backend -> schoolbase-compreface:80 (only when face attendance is enabled)
 ```
 
 PostgreSQL port `5432`, MinIO API port `9000`, and MinIO console port `9001`
@@ -69,6 +72,9 @@ are runtime variables and must not be baked into the image.
 | `APP_NAME` | Application display name | `SchoolBase` |
 | `APP_SLUG` | Stable school/application identifier | `demo` |
 | `SCHOOL_NAME` | School display name | deployment-specific |
+| `FACE_VERIFY_URL` | Optional private CompreFace Face Verification base URL | `http://schoolbase-compreface` |
+| `FACE_VERIFY_API_KEY` | Optional per-school CompreFace verification service key | provisioned secret |
+| `FACE_MATCH_THRESHOLD` | Optional face similarity cutoff | `0.8` |
 
 Email, Paystack, Google OAuth, branding, log level, token duration, and invite
 expiry settings remain optional until their corresponding feature is enabled.
@@ -77,6 +83,12 @@ Live classroom audio remains unavailable until all four `LIVEKIT_*` values are
 configured. The API key and secret are backend-only. The browser receives a
 short-lived, classroom-scoped participant token only after SchoolBase verifies
 the current teacher, administrator, or student assignment.
+
+Face attendance remains unavailable until `FACE_VERIFY_URL` and
+`FACE_VERIFY_API_KEY` are configured on that school's Coolify resource. The
+provider endpoint is self-hosted on the Coolify server and reached through the
+private `schoolbase-shared` network. Use a distinct CompreFace verification
+service key per school. See [Face attendance setup](face-attendance.md).
 
 `SCHOOL_NAME` is also the tenant-facing API identity. For example, Demo's API
 documentation is titled **SchoolBase Demo API**. The immutable image must not
