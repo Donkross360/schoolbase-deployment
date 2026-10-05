@@ -43,6 +43,8 @@ if [[ "$mode" == "infrastructure" ]]; then
   require_value MINIO_ROOT_USER
   require_secret MINIO_ROOT_PASSWORD
   require_secret COMPREFACE_DB_PASSWORD
+  require_value COMPREFACE_DASHBOARD_AUTH_USERS
+  [[ ${COMPREFACE_DASHBOARD_AUTH_USERS:-} =~ ^[^:]+:\$2[aby]\$[0-9]{2}\$ ]] || fail "COMPREFACE_DASHBOARD_AUTH_USERS must be a username:bcrypt-hash entry"
 else
   for name in SCHOOLBASE_IMAGE APP_SLUG SCHOOL_NAME FRONTEND_URL API_PUBLIC_URL \
     SUPERADMIN_LOGIN_URL CORS_ORIGINS DB_NAME DB_USER MINIO_BUCKET_NAME \

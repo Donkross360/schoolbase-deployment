@@ -159,7 +159,9 @@ services:
     image: exadel/compreface-fe:${COMPREFACE_VERSION:-1.2.0}
     restart: unless-stopped
     labels:
-      traefik.enable: "false"
+      traefik.docker.network: coolify
+      traefik.http.middlewares.schoolbase-compreface-auth.basicauth.users: ${COMPREFACE_DASHBOARD_AUTH_USERS:?set COMPREFACE_DASHBOARD_AUTH_USERS}
+      coolify.traefik.middlewares: schoolbase-compreface-auth
     depends_on:
       - compreface-api
       - compreface-admin
@@ -174,6 +176,7 @@ services:
       schoolbase_shared:
         aliases:
           - schoolbase-compreface
+      coolify: {}
 
 volumes:
   postgres_data:

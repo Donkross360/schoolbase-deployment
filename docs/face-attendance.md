@@ -23,7 +23,8 @@ infrastructure resource, reload the Compose definition from the selected Git
 branch. Keep all current PostgreSQL and MinIO variables unchanged. Add a new,
 unique `COMPREFACE_DB_PASSWORD` in **Configuration → Environment Variables**;
 the CompreFace database is independent of `POSTGRES_ADMIN_PASSWORD` and the
-school database passwords. The optional values in
+school database passwords. Set `COMPREFACE_DASHBOARD_AUTH_USERS` as described
+below before reloading this Compose revision. The optional values in
 `config/infrastructure.env.example` include a pinned CompreFace image version,
 dashboard port, and Java heap settings. Save and redeploy the infrastructure
 resource. No second Coolify resource or pasted upstream YAML is needed.
@@ -32,8 +33,8 @@ The infrastructure Compose file includes CompreFace's five services and a
 persistent volume named `schoolbase-compreface-postgres-data`. It hard-codes
 `SAVE_IMAGES_TO_DB=false`, so submitted verification images are not retained
 in CompreFace's database. The dashboard binds only to host loopback port
-`18000` by default and has no public domain. The frontend joins both its
-private CompreFace network and `schoolbase-shared`, where its DNS alias is
+`18000` by default. The frontend joins its private CompreFace network,
+`schoolbase-shared`, and Coolify's proxy network. On `schoolbase-shared` its DNS alias is
 `schoolbase-compreface`. Schoolbase reaches it at
 `http://schoolbase-compreface` on container port 80. [CompreFace upstream
 Compose](https://github.com/exadel-inc/CompreFace/blob/master/docker-compose.yml)
@@ -51,6 +52,26 @@ ssh -L 18000:127.0.0.1:18000 <ssh-user>@<coolify-server-ip>
 Keep that SSH session open and visit `http://localhost:18000/login` in your
 browser. If you changed `COMPREFACE_DASHBOARD_PORT`, use that port in both
 places.
+
+### Dashboard access without SSH
+
+The Compose frontend also supports an HTTPS domain protected by Traefik basic
+authentication. Before reloading this Compose revision in Coolify, generate a
+strong dashboard password on your computer and create a bcrypt users entry
+with `htpasswd -nB admin` (it prompts for the password). Set the output, in the form
+`admin:$2y$...`, as `COMPREFACE_DASHBOARD_AUTH_USERS` in the **shared
+infrastructure** resource's Environment Variables. Store the plaintext password
+in your password manager, mark the Coolify value as a secret, and enable
+**Is Literal?** so Coolify keeps the dollar signs in the bcrypt hash.
+
+Reload the Git Compose definition. Under **Configuration → General**, assign
+your HTTPS hostname to **Domains for compreface-fe** on container port `80`.
+Point its DNS record to the Coolify server. Save and redeploy. Open the hostname
+in a private browser window: it must request the basic-auth credentials before
+showing CompreFace. Do not assign a public domain to `compreface-api`,
+`compreface-admin`, or `compreface-postgres-db`. The SchoolBase apps continue
+using `http://schoolbase-compreface` on the private Docker network, so browser
+authentication does not affect their API calls. [Coolify Compose domains](https://coolify.io/docs/applications/builds/docker-compose), [Coolify Compose middleware](https://coolify.io/docs/core/networking/proxy/traefik/custom-middlewares)
 
 ## 2. Create verification services and keys
 
