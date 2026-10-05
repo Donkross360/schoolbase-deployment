@@ -20,6 +20,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: schoolbase-image-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
