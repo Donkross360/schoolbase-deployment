@@ -68,7 +68,13 @@ the bcrypt hash.
 
 Reload the Git Compose definition. Under **Configuration → General**, assign
 your HTTPS hostname to **Domains for compreface-fe** on container port `80`.
-Point its DNS record to the Coolify server. Save and redeploy. Open the hostname
+Turn off **Escape special characters in labels?** for this Compose application;
+otherwise Coolify changes `${COMPREFACE_DASHBOARD_AUTH_USERS:?...}` to
+`$${COMPREFACE_DASHBOARD_AUTH_USERS:?...}` and the bcrypt hash is not inserted.
+In **Show Deployable Compose**, confirm the basic-auth label contains the
+single-dollar `${COMPREFACE_DASHBOARD_AUTH_USERS:?...}` reference before
+deploying. Point the hostname's DNS record to the Coolify server. Save and
+redeploy. Open the hostname
 in a private browser window: it must request the basic-auth credentials before
 showing CompreFace. Do not assign a public domain to `compreface-api`,
 `compreface-admin`, or `compreface-postgres-db`. The SchoolBase apps continue
