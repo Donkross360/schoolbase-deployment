@@ -23,8 +23,8 @@ infrastructure resource, reload the Compose definition from the selected Git
 branch. Keep all current PostgreSQL and MinIO variables unchanged. Add a new,
 unique `COMPREFACE_DB_PASSWORD` in **Configuration → Environment Variables**;
 the CompreFace database is independent of `POSTGRES_ADMIN_PASSWORD` and the
-school database passwords. Set `COMPREFACE_DASHBOARD_AUTH_USERS` as described
-below before reloading this Compose revision. The optional values in
+school database passwords. Add `COMPREFACE_DASHBOARD_AUTH_USERS` manually as
+described below before deploying this Compose revision. The optional values in
 `config/infrastructure.env.example` include a pinned CompreFace image version,
 dashboard port, and Java heap settings. Save and redeploy the infrastructure
 resource. No second Coolify resource or pasted upstream YAML is needed.
@@ -56,13 +56,15 @@ places.
 ### Dashboard access without SSH
 
 The Compose frontend also supports an HTTPS domain protected by Traefik basic
-authentication. Before reloading this Compose revision in Coolify, generate a
+authentication. Before deploying this Compose revision in Coolify, generate a
 strong dashboard password on your computer and create a bcrypt users entry
 with `htpasswd -nB admin` (it prompts for the password). Set the output, in the form
 `admin:$2y$...`, as `COMPREFACE_DASHBOARD_AUTH_USERS` in the **shared
-infrastructure** resource's Environment Variables. Store the plaintext password
-in your password manager, mark the Coolify value as a secret, and enable
-**Is Literal?** so Coolify keeps the dollar signs in the bcrypt hash.
+infrastructure** resource's Environment Variables. This variable is referenced
+only in a Compose label, so use **Add** if Coolify did not create it on reload.
+Store the plaintext password in your password manager, mark the Coolify value
+as a secret, and enable **Is Literal?** so Coolify keeps the dollar signs in
+the bcrypt hash.
 
 Reload the Git Compose definition. Under **Configuration → General**, assign
 your HTTPS hostname to **Domains for compreface-fe** on container port `80`.
