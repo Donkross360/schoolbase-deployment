@@ -47,7 +47,7 @@ Create one Git-based Docker Compose resource in Coolify:
 
 Configure `https://files.schoolbase.africa:9000` as the MinIO domain. Do not
 assign a domain to PostgreSQL or the MinIO console on port `9001`. The
-CompreFace dashboard can use an authenticated HTTPS domain on `compreface-fe`
+CompreFace dashboard can use an HTTPS domain on `compreface-fe`
 or a private SSH tunnel through `127.0.0.1:18000`; see
 [face-attendance.md](face-attendance.md#dashboard-access-without-ssh). There
 are no other new host port mappings. MinIO joins Coolify's external
@@ -58,8 +58,7 @@ interface when both networks are attached.
 
 Before deploying the CompreFace addition, check that the server has x86 AVX,
 enough free memory for its 4 GB API and 1 GB admin Java heap defaults, and a
-free localhost port `18000`. Set a unique `COMPREFACE_DB_PASSWORD` and a
-`COMPREFACE_DASHBOARD_AUTH_USERS` bcrypt entry on the
+free localhost port `18000`. Set a unique `COMPREFACE_DB_PASSWORD` on the
 same infrastructure resource. Reload the Git Compose definition and redeploy;
 the existing PostgreSQL and MinIO values stay as they are. Wait for PostgreSQL,
 MinIO, and the five CompreFace services to start. Confirm network

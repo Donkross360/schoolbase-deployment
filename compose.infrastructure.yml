@@ -160,8 +160,6 @@ services:
     restart: unless-stopped
     labels:
       traefik.docker.network: coolify
-      traefik.http.middlewares.schoolbase-compreface-auth.basicauth.users: ${COMPREFACE_DASHBOARD_AUTH_USERS:?set COMPREFACE_DASHBOARD_AUTH_USERS}
-      coolify.traefik.middlewares: schoolbase-compreface-auth
     depends_on:
       - compreface-api
       - compreface-admin
