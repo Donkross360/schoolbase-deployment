@@ -96,10 +96,24 @@ This provisions database `sb_demo`, database role `sb_demo_app`, bucket `demo`,
 and Demo-only MinIO credentials. St Paul receives database `sb_stpaul`, role
 `sb_stpaul_app`, bucket `stpaul`, and separate MinIO credentials.
 
-The current upload feature returns persistent image URLs, so set
-`MINIO_BUCKET_PUBLIC_READ=true`. This grants anonymous object downloads only;
-database and MinIO write credentials remain school-specific. Do not use this
-mechanism later for private documents.
+Browser-visible images still need public reads, so keep
+`MINIO_BUCKET_PUBLIC_READ=true`. Provisioning now grants anonymous reads only
+for image prefixes (`schoolbase-users`, `schoolbase-uploads`,
+`schoolbase-school-logos`, and classroom whiteboards). New payment receipts use
+`receipts/` and are retrieved through the authenticated
+`GET /fee-payments/:id/receipt` endpoint. Assignment attachments and classroom
+voice notes use authenticated backend routes and remain private in MinIO.
+
+Before deploying the backend change, reload and redeploy the shared
+infrastructure Compose resource so its MinIO image contains the revised
+provisioning script. Then rerun each school's MinIO provisioning task to replace
+the old whole-bucket policy. Check one public image without login,
+then check that a new receipt and assignment object return HTTP 403 without
+login while their authenticated backend download routes work. Existing receipts
+stored under `schoolbase-uploads/` remain publicly readable; inventory and
+migrate their objects and saved URLs separately before claiming full receipt
+privacy. Do not set `MINIO_BUCKET_PUBLIC_READ=false` until all browser-visible
+image URLs are served through an authenticated or signed route.
 
 Rerunning provisioning keeps existing data and credentials. If supplied
 credentials do not match an existing role or user, verification fails instead

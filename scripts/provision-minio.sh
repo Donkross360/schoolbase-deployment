@@ -60,7 +60,10 @@ fi
 mc admin policy attach "$alias_name" "$policy_name" --user "$access_key" >/dev/null
 
 if [ "$public_read" = true ]; then
-  mc anonymous set download "$alias_name/$bucket" >/dev/null
+  cat >"$policy_file" <<EOF
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"s3:GetObject","Resource":["arn:aws:s3:::$bucket/schoolbase-users/*","arn:aws:s3:::$bucket/schoolbase-uploads/*","arn:aws:s3:::$bucket/schoolbase-school-logos/*","arn:aws:s3:::$bucket/classrooms/*/whiteboard/*"]}]}
+EOF
+  mc anonymous set-json "$policy_file" "$alias_name/$bucket" >/dev/null
 else
   mc anonymous set none "$alias_name/$bucket" >/dev/null
 fi

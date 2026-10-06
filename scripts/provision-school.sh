@@ -80,7 +80,10 @@ EOF
     mc admin policy attach root "$policy_name" --user "$MINIO_ACCESS_KEY" >/dev/null
 
     if [ "$MINIO_BUCKET_PUBLIC_READ" = true ]; then
-      mc anonymous set download "root/$MINIO_BUCKET_NAME" >/dev/null
+      cat >"$policy_file" <<EOF
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"s3:GetObject","Resource":["arn:aws:s3:::$MINIO_BUCKET_NAME/schoolbase-users/*","arn:aws:s3:::$MINIO_BUCKET_NAME/schoolbase-uploads/*","arn:aws:s3:::$MINIO_BUCKET_NAME/schoolbase-school-logos/*","arn:aws:s3:::$MINIO_BUCKET_NAME/classrooms/*/whiteboard/*"]}]}
+EOF
+      mc anonymous set-json "$policy_file" "root/$MINIO_BUCKET_NAME" >/dev/null
     else
       mc anonymous set none "root/$MINIO_BUCKET_NAME" >/dev/null
     fi

@@ -66,6 +66,27 @@ jobs:
               /bin/sh /opt/schoolbase/provision-minio.sh "$school"
           done
 
+      - name: Verify anonymous reads are limited to public images
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
+            mc alias set root http://127.0.0.1:9000 \
+              "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+            printf probe >/tmp/public-read-probe
+            mc cp /tmp/public-read-probe root/demo/schoolbase-users/probe >/dev/null
+            mc cp /tmp/public-read-probe root/demo/receipts/probe >/dev/null
+            mc cp /tmp/public-read-probe root/demo/assignments/probe >/dev/null
+            trap "mc rm root/demo/schoolbase-users/probe root/demo/receipts/probe root/demo/assignments/probe >/dev/null" EXIT
+            test "$(wget -qO- http://127.0.0.1:9000/demo/schoolbase-users/probe)" = probe
+            if wget -qO- http://127.0.0.1:9000/demo/receipts/probe; then
+              echo "Anonymous receipt read unexpectedly succeeded." >&2
+              exit 1
+            fi
+            if wget -qO- http://127.0.0.1:9000/demo/assignments/probe; then
+              echo "Anonymous assignment read unexpectedly succeeded." >&2
+              exit 1
+            fi
+          '
+
       - name: Restore a private transfer and remove it
         run: |
           docker compose -f compose.infrastructure.yml exec -T postgres \
