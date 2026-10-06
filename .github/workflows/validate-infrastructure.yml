@@ -66,7 +66,7 @@ jobs:
               /bin/sh /opt/schoolbase/provision-minio.sh "$school"
           done
 
-      - name: Verify anonymous reads are limited to public images
+      - name: Seed anonymous-read probes
         run: |
           docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
             mc alias set root http://127.0.0.1:9000 \
@@ -75,16 +75,32 @@ jobs:
             mc cp /tmp/public-read-probe root/demo/schoolbase-users/probe >/dev/null
             mc cp /tmp/public-read-probe root/demo/receipts/probe >/dev/null
             mc cp /tmp/public-read-probe root/demo/assignments/probe >/dev/null
-            trap "mc rm root/demo/schoolbase-users/probe root/demo/receipts/probe root/demo/assignments/probe >/dev/null" EXIT
-            test "$(wget -qO- http://127.0.0.1:9000/demo/schoolbase-users/probe)" = probe
-            if wget -qO- http://127.0.0.1:9000/demo/receipts/probe; then
+          '
+
+      - name: Verify anonymous public image read
+        run: |
+          # PostgreSQL uses Alpine and shares the schoolbase network.
+          docker compose -f compose.infrastructure.yml exec -T postgres /bin/sh -euc '
+            test "$(wget -qO- http://minio:9000/demo/schoolbase-users/probe)" = probe
+          '
+
+      - name: Verify anonymous private reads are denied
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T postgres /bin/sh -euc '
+            if wget -qO- http://minio:9000/demo/receipts/probe; then
               echo "Anonymous receipt read unexpectedly succeeded." >&2
               exit 1
             fi
-            if wget -qO- http://127.0.0.1:9000/demo/assignments/probe; then
+            if wget -qO- http://minio:9000/demo/assignments/probe; then
               echo "Anonymous assignment read unexpectedly succeeded." >&2
               exit 1
             fi
+          '
+
+      - name: Remove anonymous-read probes
+        run: |
+          docker compose -f compose.infrastructure.yml exec -T minio /bin/sh -euc '
+            mc rm root/demo/schoolbase-users/probe root/demo/receipts/probe root/demo/assignments/probe >/dev/null
           '
 
       - name: Restore a private transfer and remove it
