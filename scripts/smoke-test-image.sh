@@ -20,6 +20,14 @@ cleanup() {
 
   if ((exit_code != 0)); then
     docker logs "$app_container" 2>/dev/null || true
+    docker exec "$app_container" sh -c '
+      for file in /app/backend/logs/error.log /app/backend/logs/exceptions.log /app/backend/logs/rejections.log; do
+        if [ -f "$file" ]; then
+          echo "Backend diagnostic log: $file"
+          tail -n 80 "$file"
+        fi
+      done
+    ' 2>/dev/null || true
     docker logs "$postgres_container" 2>/dev/null || true
     docker logs "$minio_container" 2>/dev/null || true
   fi
