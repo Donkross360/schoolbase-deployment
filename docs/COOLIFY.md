@@ -316,6 +316,17 @@ Check the displayed value on Demo before setting a finite period; deletion at
 the next cleanup is permanent. This change uses the existing school column and
 needs no shared infrastructure redeploy.
 
+**Admin > Activity Log** lists recorded actions with filters loaded from the
+school's actual audit rows. New writes cover student and teacher creation,
+updates and deactivation; fee component changes; recorded payments; class
+result publication; routine attendance marking and direct corrections; and
+school settings. Owner and CBT events remain visible. Each new audit row is
+written in the same database transaction as the action it describes. Existing
+history is not backfilled. On Demo, perform one test action in each workflow,
+check the actor, action, date and detail view, then test the matching filters.
+The filter indexes are an application database migration and do not require a
+shared infrastructure redeploy.
+
 Use this read-only query against a school's database after a test event:
 
 ```sql
