@@ -86,6 +86,8 @@ docker run --detach \
   --publish 127.0.0.1:3000:3000 \
   --publish 127.0.0.1:3008:3008 \
   --env NODE_ENV=production \
+  --env NODE_OPTIONS=--trace-exit \
+  --env NEST_DEBUG=true \
   --env PORT=3008 \
   --env API_BASE_URL=http://127.0.0.1:3008 \
   --env API_PUBLIC_URL=http://127.0.0.1:3008 \
