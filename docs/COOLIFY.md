@@ -291,6 +291,31 @@ setup, opening the link prompts them to set a password before a session
 is issued. Completing setup consumes that link and signs them in. Parents who
 have already set a password continue to sign in directly through a valid link.
 
+**Admin > Settings > Notifications** controls optional parent emails for published
+results, fee changes, and absent or late daily attendance. All three switches
+start off, including on restored schools. Invitation, password setup, and parent
+access flows do not use these switches. Configure `MAIL_HOST`, `MAIL_PORT`,
+`MAIL_FROM_ADDRESS`, and any SMTP credentials on the school application before
+enabling alerts. The API refuses to enable them without an SMTP host and sender.
+An alert is queued after the school event and retried after delivery failures;
+switching an alert off discards its pending emails. After ten failed attempts,
+the outbox retains the failure for operator review in
+`school_email_alert_outbox`. On Demo, verify each switch with a test parent and
+check both the inbox and outbox before enabling it for a live school. The new
+school columns and email outbox are application database migrations; they do
+not require redeploying shared PostgreSQL or MinIO infrastructure.
+
+Use this read-only query against a school's database after a test event:
+
+```sql
+SELECT alert_type,
+       count(*) FILTER (WHERE sent_at IS NULL AND discarded_at IS NULL) AS pending,
+       count(*) FILTER (WHERE sent_at IS NOT NULL) AS sent,
+       count(*) FILTER (WHERE discarded_at IS NOT NULL AND attempts >= 10) AS failed
+FROM school_email_alert_outbox
+GROUP BY alert_type;
+```
+
 For a restored school, leave `INITIAL_SETUP_SECRET` empty. Restore its database
 before application deployment and use a restored admin account. Later
 school branding changes go through authenticated **Settings** rather than the
