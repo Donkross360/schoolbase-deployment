@@ -266,6 +266,17 @@ deactivate their own account. The previous public account-activation endpoint
 is removed. Invitation acceptance through `/accept-invite` remains available,
 including for parents.
 
+The assigned owner lands on **Admin > Owner overview**, with selected-period
+enrolment, fees, results, and attendance figures plus recent activity and admin
+counts. Each section links to its detailed records. **Admin > Operations** keeps
+the existing day-to-day dashboard available to the owner. **Admin > Admins**
+shows one paginated admin list; owner-only deactivate/reactivate controls appear
+on each eligible admin there. Ordinary admins can view the list but cannot
+change another admin's access. The owner overview API also enforces ownership
+server-side.
+The Results list returns an empty page for periods without results so the
+selected-period view can show a normal empty state.
+
 The current owner can transfer ownership to another active admin from **Admin >
 Admins**. The transfer locks the school record, checks both accounts, updates
 the owner, writes an activity record, and notifies active admins in one database
@@ -320,7 +331,8 @@ needs no shared infrastructure redeploy.
 school's actual audit rows. New writes cover student and teacher creation,
 updates and deactivation; fee component changes; recorded payments; class
 result publication; routine attendance marking and direct corrections; and
-school settings. Owner and CBT events remain visible. Each new audit row is
+school settings and parent creation, updates, and deactivation. Owner and CBT
+events remain visible. Each new audit row is
 written in the same database transaction as the action it describes. Existing
 history is not backfilled. On Demo, perform one test action in each workflow,
 check the actor, action, date and detail view, then test the matching filters.
