@@ -79,6 +79,14 @@ are runtime variables and must not be baked into the image.
 Email, Paystack, Google OAuth, branding, log level, token duration, and invite
 expiry settings remain optional until their corresponding feature is enabled.
 
+`INITIAL_SETUP_SECRET` is required only while onboarding a brand-new school.
+It is a unique temporary secret of at least 32 bytes, entered by the operator
+in the setup wizard and removed from Coolify after the first regular admin
+accepts the bootstrap invitation.
+Leave it empty for restored schools such as Demo and St Paul. Existing school
+and superadmin records cannot be replaced through the setup endpoints. Setup
+superadmin login closes when a regular admin account exists.
+
 Live classroom audio remains unavailable until all four `LIVEKIT_*` values are
 configured. The API key and secret are backend-only. The browser receives a
 short-lived, classroom-scoped participant token only after SchoolBase verifies
