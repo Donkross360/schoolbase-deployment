@@ -305,6 +305,17 @@ check both the inbox and outbox before enabling it for a live school. The new
 school columns and email outbox are application database migrations; they do
 not require redeploying shared PostgreSQL or MinIO infrastructure.
 
+**Admin > Settings > Activity Log Retention** defaults to **Forever** for a new
+school. Only the assigned school owner can change it, using a separate Save
+retention period action. A finite period must be at least one day; zero is not
+accepted. The change is recorded in the activity log within the same database
+transaction. Expired logs are deleted at the next daily application cleanup,
+not when ordinary school settings are saved. A restored school keeps any
+retention period already stored in its database until its owner changes it.
+Check the displayed value on Demo before setting a finite period; deletion at
+the next cleanup is permanent. This change uses the existing school column and
+needs no shared infrastructure redeploy.
+
 Use this read-only query against a school's database after a test event:
 
 ```sql
