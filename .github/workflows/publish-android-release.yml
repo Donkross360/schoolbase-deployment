@@ -126,7 +126,8 @@ jobs:
           [[ -n "$signer" && -n "$aapt" ]] || { echo 'Android verification tools are missing' >&2; exit 1; }
           "$signer" verify --print-certs "$apk" > "${RUNNER_TEMP}/schoolbase-apk-signature.txt"
           grep -Fqi "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT_SHA256" "${RUNNER_TEMP}/schoolbase-apk-signature.txt" || { echo 'APK signing certificate does not match' >&2; exit 1; }
-          "$aapt" dump badging "$apk" | grep -Fq "package: name='$SCHOOLBASE_APPLICATION_ID'" || { echo 'APK package ID does not match the school' >&2; exit 1; }
+          package_details=$("$aapt" dump badging "$apk")
+          grep -Fq "package: name='$SCHOOLBASE_APPLICATION_ID'" <<< "$package_details" || { echo 'APK package ID does not match the school' >&2; exit 1; }
           sha=$(sha256sum "$apk" | cut -d ' ' -f 1)
           size=$(stat -c %s "$apk")
           [[ "$size" -gt 0 && "$size" -le 262144000 ]] || { echo 'APK size is outside the supported range' >&2; exit 1; }
