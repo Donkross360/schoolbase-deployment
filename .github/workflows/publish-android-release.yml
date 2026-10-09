@@ -1,0 +1,172 @@
+name: Publish school Android app
+
+on:
+  workflow_dispatch:
+    inputs:
+      school_slug:
+        description: School bucket and Android package suffix (for example demo or stpaul)
+        required: true
+      school_name:
+        description: Name shown below the Android app icon
+        required: true
+      api_base:
+        description: School API URL ending in /api/v1
+        required: true
+      mobile_ref:
+        description: Reviewed full 40-character mobile commit SHA
+        required: true
+      version:
+        description: Release version (for example 1.0.0)
+        required: true
+      build_number:
+        description: Increasing Android version code
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: school-android-${{ inputs.school_slug }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: school-${{ inputs.school_slug }}
+    steps:
+      - name: Validate release inputs and secrets
+        env:
+          SCHOOL_SLUG: ${{ inputs.school_slug }}
+          SCHOOL_NAME: ${{ inputs.school_name }}
+          API_BASE: ${{ inputs.api_base }}
+          MOBILE_REF: ${{ inputs.mobile_ref }}
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
+          MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SCHOOL_SLUG" =~ ^[a-z][a-z0-9]*$ ]] || { echo 'Invalid school slug' >&2; exit 1; }
+          [[ "$SCHOOL_NAME" =~ ^[[:print:]]{2,40}$ ]] || { echo 'Invalid school name' >&2; exit 1; }
+          [[ "$API_BASE" =~ ^https://[^[:space:]]+/api/v1/?$ ]] || { echo 'API URL must be HTTPS and end in /api/v1' >&2; exit 1; }
+          [[ "$MOBILE_REF" =~ ^[0-9a-fA-F]{40}$ ]] || { echo 'Use a reviewed full 40-character mobile commit SHA' >&2; exit 1; }
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version must be major.minor.patch' >&2; exit 1; }
+          [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Build number must be positive' >&2; exit 1; }
+          [[ "$MINIO_BUCKET" == "$SCHOOL_SLUG" ]] || { echo 'Environment bucket does not match selected school' >&2; exit 1; }
+          [[ "$MINIO_ENDPOINT" =~ ^https://[^[:space:]]+$ ]] || { echo 'MinIO endpoint must be HTTPS' >&2; exit 1; }
+          for value in "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" "$ANDROID_KEYSTORE_BASE64" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" "$ANDROID_SIGNING_CERT_SHA256"; do
+            [[ -n "$value" ]] || { echo 'A required release secret is missing' >&2; exit 1; }
+          done
+          [[ "$ANDROID_SIGNING_CERT_SHA256" =~ ^[a-fA-F0-9]{64}$ ]] || { echo 'Invalid signing certificate digest' >&2; exit 1; }
+          command -v aws >/dev/null || { echo 'AWS CLI is required on the runner' >&2; exit 1; }
+
+      - name: Check out mobile app
+        uses: actions/checkout@v5
+        with:
+          repository: schoolbaseafrica/SchoolBase-Mobile
+          ref: ${{ inputs.mobile_ref }}
+          path: SchoolBase-Mobile
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+
+      - name: Analyze and test
+        working-directory: SchoolBase-Mobile
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter analyze --no-pub
+          flutter test --no-pub
+
+      - name: Build signed school APK
+        id: build
+        working-directory: SchoolBase-Mobile
+        env:
+          SCHOOL_SLUG: ${{ inputs.school_slug }}
+          SCHOOLBASE_APP_NAME: ${{ inputs.school_name }}
+          API_BASE: ${{ inputs.api_base }}
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          SCHOOLBASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SCHOOLBASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SCHOOLBASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          EXPECTED_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCHOOLBASE_APPLICATION_ID="com.schoolbaseafrica.${SCHOOL_SLUG}"
+          SCHOOLBASE_KEYSTORE_FILE="${RUNNER_TEMP}/schoolbase-release.jks"
+          export SCHOOLBASE_APPLICATION_ID SCHOOLBASE_KEYSTORE_FILE
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SCHOOLBASE_KEYSTORE_FILE"
+          chmod 600 "$SCHOOLBASE_KEYSTORE_FILE"
+          trap 'rm -f "$SCHOOLBASE_KEYSTORE_FILE"' EXIT
+          flutter build apk --release --build-name "$VERSION" --build-number "$BUILD_NUMBER" --dart-define="SCHOOLBASE_API_BASE=$API_BASE"
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          aapt=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)
+          [[ -n "$signer" && -n "$aapt" ]] || { echo 'Android verification tools are missing' >&2; exit 1; }
+          "$signer" verify --print-certs "$apk" > "${RUNNER_TEMP}/schoolbase-apk-signature.txt"
+          grep -Fqi "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT_SHA256" "${RUNNER_TEMP}/schoolbase-apk-signature.txt" || { echo 'APK signing certificate does not match' >&2; exit 1; }
+          "$aapt" dump badging "$apk" | grep -Fq "package: name='$SCHOOLBASE_APPLICATION_ID'" || { echo 'APK package ID does not match the school' >&2; exit 1; }
+          sha=$(sha256sum "$apk" | cut -d ' ' -f 1)
+          size=$(stat -c %s "$apk")
+          [[ "$size" -gt 0 && "$size" -le 262144000 ]] || { echo 'APK size is outside the supported range' >&2; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "size=$size" >> "$GITHUB_OUTPUT"
+          echo "application_id=$SCHOOLBASE_APPLICATION_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Publish APK and manifest to school bucket
+        env:
+          SCHOOL_SLUG: ${{ inputs.school_slug }}
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          APK_SHA: ${{ steps.build.outputs.sha }}
+          APK_SIZE: ${{ steps.build.outputs.size }}
+          APP_ID: ${{ steps.build.outputs.application_id }}
+          MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
+          MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_EC2_METADATA_DISABLED: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=SchoolBase-Mobile/build/app/outputs/flutter-apk/app-release.apk
+          object_key="mobile-app/releases/${APK_SHA}.apk"
+          filename="schoolbase-${SCHOOL_SLUG}-${VERSION}-${BUILD_NUMBER}.apk"
+          export OBJECT_KEY="$object_key" FILENAME="$filename"
+          aws configure set default.s3.addressing_style path
+          if aws --endpoint-url "$MINIO_ENDPOINT" s3 cp "s3://${MINIO_BUCKET}/mobile-app/current.json" "${RUNNER_TEMP}/schoolbase-previous-app.json" --no-progress >/dev/null 2>&1; then
+            PREVIOUS_BUILD=$(python3 -c 'import json, os; print(int(json.load(open(os.environ["RUNNER_TEMP"] + "/schoolbase-previous-app.json"))["build"]))')
+            [[ "$BUILD_NUMBER" -gt "$PREVIOUS_BUILD" ]] || { echo 'Build number must increase for this school' >&2; exit 1; }
+          fi
+          aws --endpoint-url "$MINIO_ENDPOINT" s3 cp "$apk" "s3://${MINIO_BUCKET}/${object_key}" --content-type application/vnd.android.package-archive --no-progress
+          actual_size=$(aws --endpoint-url "$MINIO_ENDPOINT" s3api head-object --bucket "$MINIO_BUCKET" --key "$object_key" --query ContentLength --output text)
+          [[ "$actual_size" == "$APK_SIZE" ]] || { echo 'Uploaded APK size differs from build' >&2; exit 1; }
+          aws --endpoint-url "$MINIO_ENDPOINT" s3 cp "s3://${MINIO_BUCKET}/${object_key}" "${RUNNER_TEMP}/schoolbase-uploaded.apk" --no-progress
+          actual_sha=$(sha256sum "${RUNNER_TEMP}/schoolbase-uploaded.apk" | cut -d ' ' -f 1)
+          [[ "$actual_sha" == "$APK_SHA" ]] || { echo 'Uploaded APK checksum differs from build' >&2; exit 1; }
+          python3 -c 'import json, os, datetime; print(json.dumps({"version": os.environ["VERSION"], "build": int(os.environ["BUILD_NUMBER"]), "applicationId": os.environ["APP_ID"], "filename": os.environ["FILENAME"], "objectKey": os.environ["OBJECT_KEY"], "sha256": os.environ["APK_SHA"], "size": int(os.environ["APK_SIZE"]), "publishedAt": datetime.datetime.now(datetime.timezone.utc).isoformat()}))' > "${RUNNER_TEMP}/schoolbase-app-manifest.json"
+          aws --endpoint-url "$MINIO_ENDPOINT" s3 cp "${RUNNER_TEMP}/schoolbase-app-manifest.json" "s3://${MINIO_BUCKET}/mobile-app/current.json" --content-type application/json --no-progress
+          echo "Published $filename to the $MINIO_BUCKET school bucket" >> "$GITHUB_STEP_SUMMARY"
+          echo "SHA-256: $APK_SHA" >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,9 @@
 # Coolify deployment runbook
 
+School-specific Android releases use a separate signed workflow and private
+MinIO objects. See [Android release](ANDROID_RELEASE.md); the combined web image
+does not contain an APK.
+
 ## 1. Build the application image
 
 The frontend and backend application corrections must first be committed to
