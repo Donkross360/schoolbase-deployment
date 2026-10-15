@@ -40,6 +40,12 @@ services:
       FACE_VERIFY_API_KEY: ${FACE_VERIFY_API_KEY:-}
       FACE_MATCH_THRESHOLD: ${FACE_MATCH_THRESHOLD:-0.8}
 
+      # Optional school-specific live classroom provider.
+      LIVEKIT_URL: ${LIVEKIT_URL:-}
+      LIVEKIT_API_URL: ${LIVEKIT_API_URL:-}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
+
       APP_NAME: ${APP_NAME:-SchoolBase}
       APP_SLUG: ${APP_SLUG:?set APP_SLUG}
       SCHOOL_NAME: ${SCHOOL_NAME:?set SCHOOL_NAME}
