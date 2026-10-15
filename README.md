@@ -46,11 +46,10 @@ Read `docs/COOLIFY.md` before deploying or restoring data.
 
 In this repository's GitHub **Actions** tab, run **Build SchoolBase Android APK**.
 Choose a committed mobile source ref and the HTTPS API URL for the school,
-ending in `/api/v1`. Until write access to the organization mobile repository
-is available, the default mobile source is the `mobile/feat-runtime-templating`
-branch in this repository, which mirrors the mobile app commit. To build from
-another repository, set `mobile_repository` to its `owner/name` and choose its
-branch, tag, or full commit SHA. The workflow checks the app, builds an
+ending in `/api/v1`. The default source is the `feat/runtime-templating` branch
+in `schoolbaseafrica/SchoolBase-Mobile`. To build from another repository,
+set `mobile_repository` to its `owner/name` and choose its branch, tag, or full
+commit SHA. The workflow checks the app, builds an
 installable debug APK, and attaches the APK plus its SHA-256 checksum to the run
 for 30 days. The run summary records the mobile commit and backend URL. The
 default URL points to the Demo API.
