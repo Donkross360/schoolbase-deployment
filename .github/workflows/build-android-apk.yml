@@ -8,12 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       mobile_repository:
-        description: Source repository (blank uses this deployment repository)
+        description: Source repository
         required: false
+        default: schoolbaseafrica/SchoolBase-Mobile
       mobile_ref:
         description: Mobile branch, tag, or full commit SHA
         required: true
-        default: mobile/feat-runtime-templating
+        default: feat/runtime-templating
       api_base:
         description: HTTPS backend URL ending in /api/v1
         required: true
@@ -29,7 +30,7 @@ jobs:
     steps:
       - name: Validate inputs
         env:
-          MOBILE_REF: ${{ inputs.mobile_ref || 'mobile/feat-runtime-templating' }}
+          MOBILE_REF: ${{ inputs.mobile_ref || 'feat/runtime-templating' }}
           API_BASE: ${{ inputs.api_base || 'https://api.demo.schoolbase.africa/api/v1' }}
         shell: bash
         run: |
@@ -45,8 +46,8 @@ jobs:
       - name: Check out mobile app
         uses: actions/checkout@v5
         with:
-          repository: ${{ inputs.mobile_repository || github.repository }}
-          ref: ${{ inputs.mobile_ref || 'mobile/feat-runtime-templating' }}
+          repository: ${{ inputs.mobile_repository || 'schoolbaseafrica/SchoolBase-Mobile' }}
+          ref: ${{ inputs.mobile_ref || 'feat/runtime-templating' }}
           path: SchoolBase-Mobile
 
       - name: Set up Java
