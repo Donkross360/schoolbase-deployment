@@ -27,6 +27,8 @@ Coolify's [PostgreSQL guide](https://coolify.io/docs/databases/postgresql) descr
 
 ## 2. Deploy the platform API
 
+Before the first build, add the `PLATFORM_SOURCE_TOKEN` **Actions repository secret** to `Donkross360/schoolbase-deployment`. Use a fine-grained GitHub token restricted to the private `schoolbaseafrica/SchoolBase-Platform-BE` repository with `Contents: Read-only`. The workflow's default `GITHUB_TOKEN` is limited to the deployment repository and cannot check out that private source. Deploy keys are disabled for the platform repository, so they cannot be used here. Keep this token in GitHub Actions secrets, never in Coolify environment variables or the workflow file. It is separate from any GHCR package-read credential needed by Coolify.
+
 1. In `schoolbase-deployment` on `main`, run **Actions → Build SchoolBase platform images → Run workflow**. Set `platform_ref` to the committed Platform-BE `main` branch or an exact 40-character commit SHA. Wait for both image builds and smoke checks to pass. Copy `PLATFORM_API_DIGEST` and `PLATFORM_COLLECTOR_DIGEST` from the run summary and record `Platform backend` SHA. The summary also gives human-readable commit tags. Use the digest references in Coolify so a repeated build cannot silently change the deployed bytes.
 2. In Coolify, select **New Resource → Docker Image** and enter the exact `PLATFORM_API_DIGEST` value. Coolify accepts a full `ghcr.io/...@sha256:...` reference. If the GHCR package is private, configure Coolify registry credentials with package read access before deploying. Do not put the registry token in application environment variables.
 3. Set **Ports Exposes** to `3010`. Add the chosen HTTPS domain and verify its DNS/TLS route.

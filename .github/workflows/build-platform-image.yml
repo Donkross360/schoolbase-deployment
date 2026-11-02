@@ -36,12 +36,23 @@ jobs:
             exit 1
           fi
 
+      - name: Verify private source access is configured
+        env:
+          PLATFORM_SOURCE_TOKEN: ${{ secrets.PLATFORM_SOURCE_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$PLATFORM_SOURCE_TOKEN" ]]; then
+            echo 'Add the PLATFORM_SOURCE_TOKEN Actions secret with read access to schoolbaseafrica/SchoolBase-Platform-BE.' >&2
+            exit 1
+          fi
+
       - name: Check out platform backend
         uses: actions/checkout@v5
         with:
           repository: schoolbaseafrica/SchoolBase-Platform-BE
           ref: ${{ inputs.platform_ref }}
           path: SchoolBase-Platform-BE
+          token: ${{ secrets.PLATFORM_SOURCE_TOKEN }}
           persist-credentials: false
 
       - name: Resolve immutable image tags
