@@ -15,7 +15,7 @@ secrets, resource limits, and frontend/API domains.
 | `compose.school.yml` | Reusable application definition; create one Coolify resource per school |
 | `Dockerfile.combined` | Builds the combined Next.js and NestJS image |
 | `.github/workflows/build-image.yml` | Builds and publishes an immutable GHCR image |
-| `.github/workflows/build-platform-image.yml` | Builds and publishes platform API and collector GHCR images from Platform-BE |
+| `.github/workflows/build-platform-image.yml` | Reusable build for platform API and collector images, called by private Platform-BE Actions |
 | `.github/workflows/build-android-apk.yml` | Builds a downloadable Android test APK from a selected mobile ref |
 | `config/*.env.example` | Non-secret configuration templates |
 | `scripts/validate-config.sh` | Rejects missing, weak, or placeholder configuration |

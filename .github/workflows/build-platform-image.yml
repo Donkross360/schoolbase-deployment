@@ -1,12 +1,7 @@
 name: Build SchoolBase platform images
 
 on:
-  workflow_dispatch:
-    inputs:
-      platform_ref:
-        description: Platform backend branch, tag, or full commit SHA
-        required: true
-        default: main
+  workflow_call:
 
 permissions:
   contents: read
@@ -21,38 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Check out deployment repository
+      - name: Check out private platform source
         uses: actions/checkout@v5
         with:
+          path: SchoolBase-Platform-BE
           persist-credentials: false
 
-      - name: Validate source ref
-        env:
-          PLATFORM_REF: ${{ inputs.platform_ref }}
-        shell: bash
-        run: |
-          if [[ "$PLATFORM_REF" =~ ^[0-9a-fA-F]{7,39}$ ]]; then
-            echo "Use a branch, tag, or full 40-character commit SHA." >&2
-            exit 1
-          fi
-
-      - name: Verify private source access is configured
-        env:
-          PLATFORM_SOURCE_TOKEN: ${{ secrets.PLATFORM_SOURCE_TOKEN }}
-        shell: bash
-        run: |
-          if [[ -z "$PLATFORM_SOURCE_TOKEN" ]]; then
-            echo 'Add the PLATFORM_SOURCE_TOKEN Actions secret with read access to schoolbaseafrica/SchoolBase-Platform-BE.' >&2
-            exit 1
-          fi
-
-      - name: Check out platform backend
+      - name: Check out deployment smoke test
         uses: actions/checkout@v5
         with:
-          repository: schoolbaseafrica/SchoolBase-Platform-BE
-          ref: ${{ inputs.platform_ref }}
-          path: SchoolBase-Platform-BE
-          token: ${{ secrets.PLATFORM_SOURCE_TOKEN }}
+          repository: Donkross360/schoolbase-deployment
+          ref: ${{ job.workflow_sha }}
+          path: schoolbase-deployment
           persist-credentials: false
 
       - name: Resolve immutable image tags
@@ -105,7 +80,7 @@ jobs:
             'test -f scripts/collect-database-size.js; test -f scripts/collect-minio-bucket.js; test -f scripts/collect-disk-headroom.js; test "$(id -u)" != 0'
 
       - name: Smoke test API startup and migrations
-        run: ./scripts/smoke-test-platform-image.sh schoolbase-platform-api-smoke:${{ github.run_id }}
+        run: ./schoolbase-deployment/scripts/smoke-test-platform-image.sh schoolbase-platform-api-smoke:${{ github.run_id }}
 
       - name: Publish API image
         id: publish_api
