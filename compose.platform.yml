@@ -1,0 +1,17 @@
+services:
+  api:
+    image: ${PLATFORM_API_IMAGE:?set PLATFORM_API_IMAGE to a published image digest}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3010"
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL to the platform PostgreSQL URL}
+      PROBES_ENABLED: ${PROBES_ENABLED:-false}
+      ALERTS_ENABLED: ${ALERTS_ENABLED:-false}
+      PLATFORM_BOOTSTRAP_EMAIL: ${PLATFORM_BOOTSTRAP_EMAIL:-}
+      PLATFORM_BOOTSTRAP_NAME: ${PLATFORM_BOOTSTRAP_NAME:-}
+      PLATFORM_BOOTSTRAP_PASSWORD: ${PLATFORM_BOOTSTRAP_PASSWORD:-}
+    expose:
+      - "3010"
+    stop_grace_period: 30s

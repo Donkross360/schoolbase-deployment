@@ -13,6 +13,7 @@ secrets, resource limits, and frontend/API domains.
 | `compose.infrastructure.yml` | Shared PostgreSQL and MinIO, plus private CompreFace verification stack |
 | `Dockerfile.infrastructure-*` | Adds Coolify provisioning commands to the shared service images |
 | `compose.school.yml` | Reusable application definition; create one Coolify resource per school |
+| `compose.platform.yml` | Platform API Coolify resource; pulls the published private API image |
 | `Dockerfile.combined` | Builds the combined Next.js and NestJS image |
 | `.github/workflows/build-image.yml` | Builds and publishes an immutable GHCR image |
 | `.github/workflows/build-platform-image.yml` | Reusable build for platform API and collector images, called by private Platform-BE Actions |

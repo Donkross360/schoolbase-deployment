@@ -10,7 +10,7 @@ Place the platform database and API on the same reachable Coolify destination ne
 
 | Resource | Source | Build file | Internal port |
 | --- | --- | --- | --- |
-| Platform API | Deployment workflow → immutable `schoolbase-platform-api` GHCR image | Backend `/Dockerfile` | 3010 |
+| Platform API | `schoolbase-deployment` `/compose.platform.yml` → published `schoolbase-platform-api` image | Backend `/Dockerfile` | 3010 |
 | Existing website frontend | `schoolbaseafrica/SchoolBase-Website-FE`, `dev` | `/Dockerfile` | 3000 |
 | Each private metric worker | Same deployment workflow → immutable `schoolbase-platform-collector` GHCR image | Backend `/Dockerfile.collector` | none |
 
@@ -30,22 +30,22 @@ Coolify's [PostgreSQL guide](https://coolify.io/docs/databases/postgresql) descr
 The platform repo is private, while `schoolbase-deployment` is public. Starting the build from the platform repo lets its own `GITHUB_TOKEN` read the source. The called reusable workflow and smoke-test script stay in `schoolbase-deployment`, pinned by commit in the caller. No cross-repository source credential or Actions secret is required for the build. This is separate from any GHCR package-read credential needed by Coolify.
 
 1. In `SchoolBase-Platform-BE` on `main`, run **Actions → Build SchoolBase platform images → Run workflow**. Wait for both image builds and smoke checks to pass. Copy `PLATFORM_API_DIGEST` and `PLATFORM_COLLECTOR_DIGEST` from the run summary and record `Platform backend` SHA. The summary also gives human-readable commit tags. Use the digest references in Coolify so a repeated build cannot silently change the deployed bytes.
-2. In Coolify, select **New Resource → Docker Image** and enter the exact `PLATFORM_API_DIGEST` value. Coolify accepts a full `ghcr.io/...@sha256:...` reference. If the GHCR package is private, configure Coolify registry credentials with package read access before deploying. Do not put the registry token in application environment variables.
-3. Set **Ports Exposes** to `3010`. Add the chosen HTTPS domain and verify its DNS/TLS route.
-4. Add the following **runtime** variables. Mark `DATABASE_URL` secret:
+2. In Coolify, select **New Resource → Public Repository** for `https://github.com/Donkross360/schoolbase-deployment.git`, branch `main`, **Docker Compose** build pack, base directory `/`, and Compose location `/compose.platform.yml`. This is a separate platform API resource; do not add it to either school's Compose resource.
+3. The GHCR package is private: an unauthenticated pull of the published API digest returns HTTP 401. Under Coolify **Registries**, log in to `ghcr.io` on the deployment server with a GitHub credential allowed to read that package. Check the registry login before deployment. Do not put the registry credential in the application's environment variables.
+4. Set `PLATFORM_API_IMAGE` to the exact `PLATFORM_API_DIGEST` value from step 1. On the `api` service, configure the chosen HTTPS domain routed to internal port `3010`. Enable **Connect To Predefined Network** so the API can reach the private platform PostgreSQL resource on that destination. Leave Raw Compose Deployment disabled. Do not publish a host port.
+5. Add the following Compose **environment variables** in Coolify. Mark `DATABASE_URL` secret; the Compose file passes them into the container:
 
    ```dotenv
-   NODE_ENV=production
-   PORT=3010
+   PLATFORM_API_IMAGE=ghcr.io/schoolbaseafrica/schoolbase-platform-api@sha256:<digest from the successful run>
    DATABASE_URL=<platform PostgreSQL Internal URL>
    PROBES_ENABLED=false
    ALERTS_ENABLED=false
    ```
 
-5. Deploy. The image applies numbered database migrations before starting. Check the GitHub Actions run for the build/source SHA, then Coolify **Deployment Logs** for the image pull and **Runtime Logs** for migration or startup errors.
-6. From a client admitted by the API route, request `GET https://<platform-api-host>/health/live` and `GET https://<platform-api-host>/health/ready`. Both should return HTTP 200 with `{"status":"ok"}`. If readiness fails, fix the database connection or migration before continuing.
+6. Deploy manually. The image applies numbered database migrations before starting. Check the GitHub Actions run for the build/source SHA, then Coolify **Deployment Logs** for the image pull and **Runtime Logs** for migration or startup errors.
+7. From a client admitted by the API route, request `GET https://<platform-api-host>/health/live` and `GET https://<platform-api-host>/health/ready`. Both should return HTTP 200 with `{"status":"ok"}`. If readiness fails, fix the database connection or migration before continuing.
 
-The API image already migrates on startup under a PostgreSQL advisory lock. Do not configure a second pre-deployment migration command. The workflow publishes images; Coolify pulls them and supplies runtime settings.
+The API image already migrates on startup under a PostgreSQL advisory lock. Do not configure a second pre-deployment migration command. The workflow publishes images; Coolify uses the deployment repository's Compose file to pull them and apply runtime settings.
 
 ## 3. Create the first platform operator
 
