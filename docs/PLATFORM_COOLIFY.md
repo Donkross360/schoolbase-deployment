@@ -6,13 +6,13 @@ The current code supports registry, availability probes, staff login reports, ca
 
 ## 0. Record the inputs
 
-Place the platform database and API on the same reachable Coolify destination network. Keep the website frontend in its existing resource; it may be in another project if its container can reach the API HTTPS route. Record the deployed commit for each repository:
+Place the platform database and API on the same reachable Coolify destination network. Keep the website frontend in its existing resource; it may be in another project if its container can reach the API HTTPS route. Build the platform API and collector images from `schoolbase-deployment` on `main`; `SchoolBase-Platform-BE` remains the source repository. Record the deployed backend commit and exact images from the workflow summary:
 
 | Resource | Source | Build file | Internal port |
 | --- | --- | --- | --- |
-| Platform API | `schoolbaseafrica/SchoolBase-Platform-BE`, `main` | `/Dockerfile` | 3010 |
+| Platform API | Deployment workflow → immutable `schoolbase-platform-api` GHCR image | Backend `/Dockerfile` | 3010 |
 | Existing website frontend | `schoolbaseafrica/SchoolBase-Website-FE`, `dev` | `/Dockerfile` | 3000 |
-| Each private metric worker | Platform backend, `main` | `/Dockerfile.collector` | none |
+| Each private metric worker | Same deployment workflow → immutable `schoolbase-platform-collector` GHCR image | Backend `/Dockerfile.collector` | none |
 
 Choose an HTTPS API hostname such as `platform-api.schoolbase.africa`. It must be reachable from the website server, school backends, and collectors. Protect the API route with a network, VPN, or IP restriction that admits those callers and the operator setup client. Do not enable Coolify HTTP Basic Authentication on this route: it uses the same `Authorization` header as the API bearer tokens. A gateway requiring extra service-token headers needs client support before use. If the route cannot be protected and reached by all callers, stop before adding school or collector credentials.
 
@@ -27,9 +27,10 @@ Coolify's [PostgreSQL guide](https://coolify.io/docs/databases/postgresql) descr
 
 ## 2. Deploy the platform API
 
-1. Select **New Resource → Public Repository**. Use `https://github.com/schoolbaseafrica/SchoolBase-Platform-BE.git`, branch `main`, **Dockerfile** build pack, base directory `/`, and Dockerfile location `/Dockerfile`.
-2. Set **Ports Exposes** to `3010`. Add the chosen HTTPS domain and verify its DNS/TLS route.
-3. Add the following **runtime** variables. Mark `DATABASE_URL` secret. No variable is needed at build time:
+1. In `schoolbase-deployment` on `main`, run **Actions → Build SchoolBase platform images → Run workflow**. Set `platform_ref` to the committed Platform-BE `main` branch or an exact 40-character commit SHA. Wait for both image builds and smoke checks to pass. Copy `PLATFORM_API_DIGEST` and `PLATFORM_COLLECTOR_DIGEST` from the run summary and record `Platform backend` SHA. The summary also gives human-readable commit tags. Use the digest references in Coolify so a repeated build cannot silently change the deployed bytes.
+2. In Coolify, select **New Resource → Docker Image** and enter the exact `PLATFORM_API_DIGEST` value. Coolify accepts a full `ghcr.io/...@sha256:...` reference. If the GHCR package is private, configure Coolify registry credentials with package read access before deploying. Do not put the registry token in application environment variables.
+3. Set **Ports Exposes** to `3010`. Add the chosen HTTPS domain and verify its DNS/TLS route.
+4. Add the following **runtime** variables. Mark `DATABASE_URL` secret:
 
    ```dotenv
    NODE_ENV=production
@@ -39,10 +40,10 @@ Coolify's [PostgreSQL guide](https://coolify.io/docs/databases/postgresql) descr
    ALERTS_ENABLED=false
    ```
 
-4. Deploy. The image applies numbered database migrations before starting. Check **Deployment Logs** for the source commit and build, then **Runtime Logs** for migration or startup errors.
-5. From a client admitted by the API route, request `GET https://<platform-api-host>/health/live` and `GET https://<platform-api-host>/health/ready`. Both should return HTTP 200 with `{"status":"ok"}`. If readiness fails, fix the database connection or migration before continuing.
+5. Deploy. The image applies numbered database migrations before starting. Check the GitHub Actions run for the build/source SHA, then Coolify **Deployment Logs** for the image pull and **Runtime Logs** for migration or startup errors.
+6. From a client admitted by the API route, request `GET https://<platform-api-host>/health/live` and `GET https://<platform-api-host>/health/ready`. Both should return HTTP 200 with `{"status":"ok"}`. If readiness fails, fix the database connection or migration before continuing.
 
-The Dockerfile already migrates on startup under a PostgreSQL advisory lock. Do not configure a second pre-deployment migration command. Coolify's [Dockerfile guide](https://coolify.io/docs/applications/builds/dockerfile) covers the build pack, path, port, domain, and health settings.
+The API image already migrates on startup under a PostgreSQL advisory lock. Do not configure a second pre-deployment migration command. The workflow publishes images; Coolify pulls them and supplies runtime settings.
 
 ## 3. Create the first platform operator
 
@@ -114,7 +115,7 @@ URL fields must be HTTPS origins without paths or ports. School admin tokens can
 
 ## 7. Add private metric workers one at a time
 
-Coolify [Scheduled Tasks](https://coolify.io/docs/applications/operations/scheduled-tasks) run commands **inside a running container**. The collector Dockerfile keeps a private worker alive; the scheduled command runs once and exits. Create a separate Dockerfile application for each collector credential: platform backend repository on `main`, Dockerfile `/Dockerfile.collector`, **no domain and no public port**. Remove any generated proxy domain. Confirm its container stays running before creating a task.
+Coolify [Scheduled Tasks](https://coolify.io/docs/applications/operations/scheduled-tasks) run commands **inside a running container**. The collector image keeps a private worker alive; the scheduled command runs once and exits. Create a separate **Docker Image** resource for each collector credential using the exact `PLATFORM_COLLECTOR_DIGEST` from step 2, **no domain and no public port**. Remove any generated proxy domain. If GHCR is private, give Coolify package read access. Confirm its container stays running before creating a task.
 
 Do not configure an HTTP health path for a worker: it has no HTTP server. Check its running container state and scheduled-task execution history instead.
 
@@ -144,7 +145,7 @@ Container CPU/memory/restarts and per-school proxy error/latency collectors have
 
 1. Keep `ALERTS_ENABLED=false` while source mapping or readings remain unverified. After continuous valid samples and threshold review, enable it on **one** API instance. Capacity and collection-stale alerts then appear in the dashboard. Acknowledgement records actor and reason; it does not resolve an incident or disable a school.
 2. Compare Demo and St Paul readings with direct PostgreSQL/MinIO measurements, and shared disk with the actual host/volume. Record the sample time, source ID, resource reference, and any mismatch. A successful scheduled-task exit alone is not proof of attribution.
-3. After each deployment, recheck database backup execution, API readiness, website login, school status, and collector task history. Record API and website commit IDs.
+3. After each deployment, recheck database backup execution, API readiness, website login, school status, and collector task history. Record the Platform-BE and website commit IDs, plus the exact API and collector image tags.
 4. If a rollout fails, disable the affected collector schedule or turn `PROBES_ENABLED`/`ALERTS_ENABLED` back off. Review migrations and backup state before rolling back the API image: a container rollback does not undo a forward-only database migration.
 
 The pilot remains incomplete until live attribution, container/proxy metrics, availability alerts, alert email, and threshold calibration are finished.

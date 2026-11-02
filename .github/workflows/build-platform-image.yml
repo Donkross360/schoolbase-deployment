@@ -1,0 +1,142 @@
+name: Build SchoolBase platform images
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform_ref:
+        description: Platform backend branch, tag, or full commit SHA
+        required: true
+        default: main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: schoolbase-platform-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out deployment repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Validate source ref
+        env:
+          PLATFORM_REF: ${{ inputs.platform_ref }}
+        shell: bash
+        run: |
+          if [[ "$PLATFORM_REF" =~ ^[0-9a-fA-F]{7,39}$ ]]; then
+            echo "Use a branch, tag, or full 40-character commit SHA." >&2
+            exit 1
+          fi
+
+      - name: Check out platform backend
+        uses: actions/checkout@v5
+        with:
+          repository: schoolbaseafrica/SchoolBase-Platform-BE
+          ref: ${{ inputs.platform_ref }}
+          path: SchoolBase-Platform-BE
+          persist-credentials: false
+
+      - name: Resolve immutable image tags
+        id: metadata
+        shell: bash
+        run: |
+          backend_sha=$(git -C SchoolBase-Platform-BE rev-parse HEAD)
+          owner=$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          {
+            echo "backend_sha=$backend_sha"
+            echo "api_image=ghcr.io/${owner}/schoolbase-platform-api:be-${backend_sha:0:12}"
+            echo "collector_image=ghcr.io/${owner}/schoolbase-platform-collector:be-${backend_sha:0:12}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build API for smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: ./SchoolBase-Platform-BE
+          file: ./SchoolBase-Platform-BE/Dockerfile
+          load: true
+          tags: schoolbase-platform-api-smoke:${{ github.run_id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build collector for smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: ./SchoolBase-Platform-BE
+          file: ./SchoolBase-Platform-BE/Dockerfile.collector
+          load: true
+          tags: schoolbase-platform-collector-smoke:${{ github.run_id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test image contents and runtime user
+        run: |
+          docker run --rm --entrypoint sh schoolbase-platform-api-smoke:${{ github.run_id }} -ec \
+            'test -f dist/main.js; test -f scripts/migrate.js; test -f scripts/bootstrap-admin.js; test -d db; test "$(id -u)" != 0'
+          docker run --rm --entrypoint sh schoolbase-platform-collector-smoke:${{ github.run_id }} -ec \
+            'test -f scripts/collect-database-size.js; test -f scripts/collect-minio-bucket.js; test -f scripts/collect-disk-headroom.js; test "$(id -u)" != 0'
+
+      - name: Smoke test API startup and migrations
+        run: ./scripts/smoke-test-platform-image.sh schoolbase-platform-api-smoke:${{ github.run_id }}
+
+      - name: Publish API image
+        id: publish_api
+        uses: docker/build-push-action@v6
+        with:
+          context: ./SchoolBase-Platform-BE
+          file: ./SchoolBase-Platform-BE/Dockerfile
+          push: true
+          tags: ${{ steps.metadata.outputs.api_image }}
+          cache-from: type=gha
+          provenance: true
+          sbom: true
+
+      - name: Publish collector image
+        id: publish_collector
+        uses: docker/build-push-action@v6
+        with:
+          context: ./SchoolBase-Platform-BE
+          file: ./SchoolBase-Platform-BE/Dockerfile.collector
+          push: true
+          tags: ${{ steps.metadata.outputs.collector_image }}
+          cache-from: type=gha
+          provenance: true
+          sbom: true
+
+      - name: Publish Coolify image coordinates
+        env:
+          API_IMAGE: ${{ steps.metadata.outputs.api_image }}
+          COLLECTOR_IMAGE: ${{ steps.metadata.outputs.collector_image }}
+          API_DIGEST: ${{ steps.publish_api.outputs.digest }}
+          COLLECTOR_DIGEST: ${{ steps.publish_collector.outputs.digest }}
+          BACKEND_SHA: ${{ steps.metadata.outputs.backend_sha }}
+        run: |
+          api_repository=${API_IMAGE%:*}
+          collector_repository=${COLLECTOR_IMAGE%:*}
+          {
+            echo '### SchoolBase platform images'
+            echo '```text'
+            echo "PLATFORM_API_IMAGE=$API_IMAGE"
+            echo "PLATFORM_COLLECTOR_IMAGE=$COLLECTOR_IMAGE"
+            echo "PLATFORM_API_DIGEST=${api_repository}@${API_DIGEST}"
+            echo "PLATFORM_COLLECTOR_DIGEST=${collector_repository}@${COLLECTOR_DIGEST}"
+            echo '```'
+            echo "Platform backend: $BACKEND_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"

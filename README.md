@@ -15,6 +15,7 @@ secrets, resource limits, and frontend/API domains.
 | `compose.school.yml` | Reusable application definition; create one Coolify resource per school |
 | `Dockerfile.combined` | Builds the combined Next.js and NestJS image |
 | `.github/workflows/build-image.yml` | Builds and publishes an immutable GHCR image |
+| `.github/workflows/build-platform-image.yml` | Builds and publishes platform API and collector GHCR images from Platform-BE |
 | `.github/workflows/build-android-apk.yml` | Builds a downloadable Android test APK from a selected mobile ref |
 | `config/*.env.example` | Non-secret configuration templates |
 | `scripts/validate-config.sh` | Rejects missing, weak, or placeholder configuration |
@@ -28,7 +29,7 @@ secrets, resource limits, and frontend/API domains.
 | `docs/DEPLOYMENT_CONTRACT.md` | Runtime, networking, isolation, and health contract |
 | `docs/COOLIFY.md` | Deployment runbook |
 | `docs/WEBSITE_COOLIFY.md` | Public website frontend/API deployment runbook |
-| `docs/PLATFORM_COOLIFY.md` | Platform pilot Dockerfiles, database, and collector deployment path |
+| `docs/PLATFORM_COOLIFY.md` | Platform pilot image, database, and collector deployment path |
 
 The old `docker-compose.yml` and `deploy.sh` describe the previous host-managed
 deployment. Do not run `deploy.sh` on a Coolify server: Coolify owns Docker,
