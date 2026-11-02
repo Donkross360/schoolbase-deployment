@@ -106,6 +106,20 @@ jobs:
           provenance: true
           sbom: true
 
+      - name: Pull published images by digest
+        env:
+          API_IMAGE: ${{ steps.metadata.outputs.api_image }}
+          COLLECTOR_IMAGE: ${{ steps.metadata.outputs.collector_image }}
+          API_DIGEST: ${{ steps.publish_api.outputs.digest }}
+          COLLECTOR_DIGEST: ${{ steps.publish_collector.outputs.digest }}
+        shell: bash
+        run: |
+          api_reference="${API_IMAGE%:*}@${API_DIGEST}"
+          collector_reference="${COLLECTOR_IMAGE%:*}@${COLLECTOR_DIGEST}"
+          docker pull "$api_reference"
+          docker pull "$collector_reference"
+          docker image inspect "$api_reference" "$collector_reference" >/dev/null
+
       - name: Publish Coolify image coordinates
         env:
           API_IMAGE: ${{ steps.metadata.outputs.api_image }}
