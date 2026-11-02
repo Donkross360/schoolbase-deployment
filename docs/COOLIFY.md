@@ -72,6 +72,15 @@ the private dashboard and key steps in [face-attendance.md](face-attendance.md).
 
 ## 4. Provision each school without server SSH
 
+The school application Compose creates a separate `schoolbase-branding-${APP_SLUG}`
+volume for each school. After a successful school API response, the frontend
+saves that school's name, colors, and logo URL there. The favicon and
+`/api/config` use this snapshot during API outages, including after app
+container restarts. Keep this volume when updating or redeploying the school.
+An optional `SCHOOL_FAVICON_URL` sets a separate icon; otherwise the uploaded
+school logo is used. The image file itself remains in school storage, so its
+public URL must stay reachable for the image to display.
+
 For a new infrastructure resource, add all variables from
 `config/infrastructure.env.example` in Coolify, then deploy. For an existing
 resource, keep its current values and add only `COMPREFACE_DB_PASSWORD` for

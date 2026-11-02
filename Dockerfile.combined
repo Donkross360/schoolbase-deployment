@@ -73,7 +73,7 @@ LABEL org.opencontainers.image.source="https://github.com/Donkross360/schoolbase
 WORKDIR /app
 
 # Create app directories
-RUN mkdir -p /app/frontend /app/backend /var/log/supervisor /app/uploads
+RUN mkdir -p /app/frontend /app/backend /var/log/supervisor /app/uploads /app/tenant-branding
 
 # Copy built frontend (standalone output)
 COPY --from=frontend-builder /app/frontend/public /app/frontend/public

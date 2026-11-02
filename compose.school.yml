@@ -50,6 +50,8 @@ services:
       APP_SLUG: ${APP_SLUG:?set APP_SLUG}
       SCHOOL_NAME: ${SCHOOL_NAME:?set SCHOOL_NAME}
       SCHOOL_LOGO_URL: ${SCHOOL_LOGO_URL:-}
+      SCHOOL_FAVICON_URL: ${SCHOOL_FAVICON_URL:-}
+      SCHOOL_BRANDING_CACHE_DIR: /app/tenant-branding
       LOGO_URL: ${LOGO_URL:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       INVITE_EXPIRATION_DAYS: ${INVITE_EXPIRATION_DAYS:-7}
@@ -71,6 +73,8 @@ services:
     expose:
       - "3000"
       - "3008"
+    volumes:
+      - tenant_branding:/app/tenant-branding
     labels:
       traefik.docker.network: coolify
     networks:
@@ -101,3 +105,7 @@ networks:
   schoolbase_shared:
     name: schoolbase-shared
     external: true
+
+volumes:
+  tenant_branding:
+    name: schoolbase-branding-${APP_SLUG:?set APP_SLUG}
