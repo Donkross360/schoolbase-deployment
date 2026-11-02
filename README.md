@@ -28,6 +28,7 @@ secrets, resource limits, and frontend/API domains.
 | `docs/DEPLOYMENT_CONTRACT.md` | Runtime, networking, isolation, and health contract |
 | `docs/COOLIFY.md` | Deployment runbook |
 | `docs/WEBSITE_COOLIFY.md` | Public website frontend/API deployment runbook |
+| `docs/PLATFORM_COOLIFY.md` | Platform pilot Dockerfiles, database, and collector deployment path |
 
 The old `docker-compose.yml` and `deploy.sh` describe the previous host-managed
 deployment. Do not run `deploy.sh` on a Coolify server: Coolify owns Docker,
