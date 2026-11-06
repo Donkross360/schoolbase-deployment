@@ -50,8 +50,8 @@ The API image already migrates on startup under a PostgreSQL advisory lock. Do n
 ## 3. Create the first platform operator
 
 1. Temporarily add `PLATFORM_BOOTSTRAP_EMAIL`, `PLATFORM_BOOTSTRAP_NAME`, and `PLATFORM_BOOTSTRAP_PASSWORD` as **runtime secrets** on the API resource. Use an individual operator email and a password of at least 12 characters. Redeploy so the container receives them.
-2. Open the API application's **Terminal** and run `node scripts/bootstrap-admin.js`. Expect `Initial platform administrator created`. Do not type a password into the terminal command. This bootstrap refuses to run once any operator exists.
-3. Remove all three bootstrap variables from Coolify and redeploy. Recheck `/health/ready`.
+2. In the API application's **Scheduled Tasks**, add a temporary task targeting the `api` container, with command `node scripts/bootstrap-admin.js`, timeout at least 60 seconds, and a non-imminent schedule such as `0 0 1 1 *`. Save it, select **Execute now** once, and inspect **Recent executions**. Expect `Initial platform administrator created`. Do not put the password in the command. This bootstrap refuses to run once any operator exists.
+3. Delete the temporary task, remove all three bootstrap variables from Coolify, and redeploy. Recheck `/health/ready`. Keep the audit event and operator record in PostgreSQL.
 4. From an admitted client, use `POST /operators/login` with that operator's email and password. The response has an eight-hour bearer token. `GET /operators/me` with that token should show `platform_admin`. Keep the token out of logs and documents.
 
 There is no registry creation form in `/admin` yet. The next step uses the authenticated API.
