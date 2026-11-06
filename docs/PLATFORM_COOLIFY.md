@@ -117,7 +117,13 @@ URL fields must be HTTPS origins without paths or ports. School admin tokens can
 4. Confirm each school application uses `schoolbase-deployment` `main` and `/compose.school.yml` with the Platform activity environment mappings. Put Demo's token only in the Demo combined application's runtime `PLATFORM_SCHOOL_TOKEN`, and St Paul's token only in St Paul's. Set each application's `PLATFORM_ACTIVITY_URL=https://<platform-api-host>/school-signals/staff-login`. Redeploy each school application separately; adding a Coolify variable alone does not pass it into a Compose container unless the file maps it.
 5. Within five minutes, inspect each school's platform status. `last_staff_login_at` reflects successful admin/teacher logins; no recorded login is different from an outage. Check each school's runtime logs for repeated report failures.
 
-For the pilot's deployment record, an operator can open each school detail page and use **Record a Coolify deployment** after checking the latest deployment in Coolify. Copy the actual result, the exact `SCHOOLBASE_IMAGE` GHCR reference from that school's resource, and the Coolify deployment UUID if available. The submission time is the observation time. The resulting status is explicitly an operator observation, not a live Coolify feed; repeat it after later deployments. It does not prove that the image is currently running or replace the read-only Coolify integration still required for automated deployment monitoring.
+### Show the image reported by each running school
+
+The combined school's Compose file passes its configured `SCHOOLBASE_IMAGE` into the app as `SCHOOLBASE_IMAGE_REF`. The existing school-scoped Platform report includes that reference on startup and about every five minutes, using the same `PLATFORM_SCHOOL_TOKEN` already configured for staff activity. Platform stores the latest report per school and records each image change. No Coolify API token, resource UUID, or manual release entry is needed.
+
+1. Deploy the Platform API image with migration `007_school_runtime_image.sql` first. Redeploy the website frontend with the new dashboard next. Then build and deploy a new combined image for each school using `schoolbase-deployment/main` and the updated `/compose.school.yml`. The old school image cannot report its image reference.
+2. Within five minutes, reload `/admin`. The overview shows each school's reported image. Open each school for its last received time and separate frontend/backend availability. **Refresh status** rereads Platform's most recent report; the school sends a new one on startup and every five minutes.
+3. Compare Demo and St Paul's displayed image references with the `SCHOOLBASE_IMAGE` value on their respective Coolify resources. They must be distinct when the schools run different images. If a report is older than 15 minutes, Platform marks the image unavailable until a new report arrives.
 
 ## 7. Add private metric workers one at a time
 
