@@ -6,7 +6,7 @@ The current code supports registry, availability probes, staff login reports, ca
 
 ## 0. Record the inputs
 
-Place the platform database and API on the same reachable Coolify destination network. Keep the website frontend in its existing resource; it may be in another project if its container can reach the API HTTPS route. The image build logic lives in `schoolbase-deployment`; a small workflow in the private `SchoolBase-Platform-BE` repo calls it using that repo's own GitHub token. Record the deployed backend commit and exact images from the workflow summary:
+Place the platform database and API on the same reachable Coolify destination network. Keep the website frontend in its existing resource; it may be in another project if its container can reach the API HTTPS route. Until organization package access is resolved, start the Platform build from `schoolbase-deployment`. This publishes distinct API and collector tags in the existing public `ghcr.io/donkross360/schoolbase` package, which Coolify already pulls for combined school images. The private Platform mirror offers a second build route, but its separate GHCR packages are currently private and cannot be pulled anonymously. Record the deployed backend commit and exact images from the workflow summary:
 
 | Resource | Source | Build file | Internal port |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ Place the platform database and API on the same reachable Coolify destination ne
 | Existing website frontend | `schoolbaseafrica/SchoolBase-Website-FE`, `dev` | `/Dockerfile` | 3000 |
 | Each private metric worker | Same deployment workflow → immutable `schoolbase-platform-collector` GHCR image | Backend `/Dockerfile.collector` | none |
 
-Choose an HTTPS API hostname such as `platform-api.schoolbase.africa`. It must be reachable from the website server, school backends, and collectors. Protect the API route with a network, VPN, or IP restriction that admits those callers and the operator setup client. Do not enable Coolify HTTP Basic Authentication on this route: it uses the same `Authorization` header as the API bearer tokens. A gateway requiring extra service-token headers needs client support before use. If the route cannot be protected and reached by all callers, stop before adding school or collector credentials.
+Choose an HTTPS API hostname such as `api.platform.schoolbase.africa`. It must be reachable from the website server, school backends, and collectors. Protect the API route with a network, VPN, or IP restriction that admits those callers and the operator setup client. Do not enable Coolify HTTP Basic Authentication on this route: it uses the same `Authorization` header as the API bearer tokens. A gateway requiring extra service-token headers needs client support before use. If the route cannot be protected and reached by all callers, stop before adding school or collector credentials.
 
 ## 1. Create platform PostgreSQL
 
@@ -27,16 +27,16 @@ Coolify's [PostgreSQL guide](https://coolify.io/docs/databases/postgresql) descr
 
 ## 2. Deploy the platform API
 
-The platform repo is private, while `schoolbase-deployment` is public. Starting the build from the platform repo lets its own `GITHUB_TOKEN` read the source. The called reusable workflow and smoke-test script stay in `schoolbase-deployment`, pinned by commit in the caller. No cross-repository source credential or Actions secret is required for the build. This is separate from any GHCR package-read credential needed by Coolify.
+The organization Platform repo and its personal mirror are private. The mirror's own `GITHUB_TOKEN` can read its source and publish images under `ghcr.io/donkross360`. A build started in the public deployment repo needs an Actions secret named `PLATFORM_MIRROR_READ_TOKEN` to read the private mirror. Create a fine-grained personal access token under `Donkross360`, restricted to only `Donkross360/SchoolBase-Platform-BE` with **Contents: Read-only**; store it only in `Donkross360/schoolbase-deployment` Actions secrets. The build logic and smoke-test script remain in the deployment repo. Sync the exact approved Platform commit to the mirror before every build; the mirror is a build source, not an independent development branch.
 
-1. In `SchoolBase-Platform-BE` on `main`, run **Actions → Build SchoolBase platform images → Run workflow**. Wait for both image builds and smoke checks to pass. Copy `PLATFORM_API_DIGEST` and `PLATFORM_COLLECTOR_DIGEST` from the run summary and record `Platform backend` SHA. The summary also gives human-readable commit tags. Use the digest references in Coolify so a repeated build cannot silently change the deployed bytes.
+1. In `Donkross360/schoolbase-deployment` on `main`, run **Actions → Build SchoolBase platform images → Run workflow** with `platform_ref=main` or a full 40-character mirror commit SHA. Wait for both image builds and smoke checks to pass. Confirm `Platform backend` SHA matches the approved organization commit, then copy `PLATFORM_API_DIGEST` and `PLATFORM_COLLECTOR_DIGEST` from the run summary. The summary also gives human-readable commit tags. Use the digest references in Coolify so a repeated build cannot silently change the deployed bytes.
 2. In Coolify, select **New Resource → Public Repository** for `https://github.com/Donkross360/schoolbase-deployment.git`, branch `main`, **Docker Compose** build pack, base directory `/`, and Compose location `/compose.platform.yml`. This is a separate platform API resource; do not add it to either school's Compose resource.
-3. The GHCR package is private: an unauthenticated pull of the published API digest returns HTTP 401. Under Coolify **Registries**, log in to `ghcr.io` on the deployment server with a GitHub credential allowed to read that package. Check the registry login before deployment. Do not put the registry credential in the application's environment variables.
+3. Confirm the workflow summary uses `ghcr.io/donkross360/schoolbase` for both Platform images, with different `platform-api-` and `platform-collector-` tags. Test anonymous pull of both digest references before changing Coolify. This reuses the already public combined-image package and does not require a registry credential in application environment variables.
 4. Set `PLATFORM_API_IMAGE` to the exact `PLATFORM_API_DIGEST` value from step 1. On the `api` service, configure the chosen HTTPS domain routed to internal port `3010`. Enable **Connect To Predefined Network** so the API can reach the private platform PostgreSQL resource on that destination. Leave Raw Compose Deployment disabled. Do not publish a host port.
 5. Add the following Compose **environment variables** in Coolify. Mark `DATABASE_URL` secret; the Compose file passes them into the container:
 
    ```dotenv
-   PLATFORM_API_IMAGE=ghcr.io/schoolbaseafrica/schoolbase-platform-api@sha256:<digest from the successful run>
+   PLATFORM_API_IMAGE=ghcr.io/donkross360/schoolbase@sha256:<API digest from the successful run>
    DATABASE_URL=<platform PostgreSQL Internal URL>
    PROBES_ENABLED=false
    ALERTS_ENABLED=false

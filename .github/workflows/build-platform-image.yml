@@ -1,6 +1,12 @@
 name: Build SchoolBase platform images
 
 on:
+  workflow_dispatch:
+    inputs:
+      platform_ref:
+        description: Private Platform mirror branch, tag, or full commit SHA
+        required: true
+        default: main
   workflow_call:
 
 permissions:
@@ -17,12 +23,34 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out private platform source
+        if: github.repository != 'Donkross360/schoolbase-deployment'
         uses: actions/checkout@v5
         with:
           path: SchoolBase-Platform-BE
           persist-credentials: false
 
+      - name: Require mirror read token
+        if: github.repository == 'Donkross360/schoolbase-deployment'
+        env:
+          MIRROR_READ_TOKEN: ${{ secrets.PLATFORM_MIRROR_READ_TOKEN }}
+        run: |
+          if [ -z "$MIRROR_READ_TOKEN" ]; then
+            echo 'Set PLATFORM_MIRROR_READ_TOKEN as a repository Actions secret before running this workflow.' >&2
+            exit 1
+          fi
+
+      - name: Check out private Platform mirror
+        if: github.repository == 'Donkross360/schoolbase-deployment'
+        uses: actions/checkout@v5
+        with:
+          repository: Donkross360/SchoolBase-Platform-BE
+          ref: ${{ inputs.platform_ref }}
+          path: SchoolBase-Platform-BE
+          token: ${{ secrets.PLATFORM_MIRROR_READ_TOKEN }}
+          persist-credentials: false
+
       - name: Check out deployment smoke test
+        if: github.repository != 'Donkross360/schoolbase-deployment'
         uses: actions/checkout@v5
         with:
           repository: Donkross360/schoolbase-deployment
@@ -30,16 +58,33 @@ jobs:
           path: schoolbase-deployment
           persist-credentials: false
 
+      - name: Check out deployment smoke test from this repository
+        if: github.repository == 'Donkross360/schoolbase-deployment'
+        uses: actions/checkout@v5
+        with:
+          path: schoolbase-deployment
+          persist-credentials: false
+
       - name: Resolve immutable image tags
         id: metadata
         shell: bash
+        env:
+          BUILD_REPOSITORY: ${{ github.repository }}
         run: |
           backend_sha=$(git -C SchoolBase-Platform-BE rev-parse HEAD)
           owner=$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          if [ "$BUILD_REPOSITORY" = 'Donkross360/schoolbase-deployment' ]; then
+            image="ghcr.io/${owner}/schoolbase"
+            api_image="${image}:platform-api-be-${backend_sha:0:12}"
+            collector_image="${image}:platform-collector-be-${backend_sha:0:12}"
+          else
+            api_image="ghcr.io/${owner}/schoolbase-platform-api:be-${backend_sha:0:12}"
+            collector_image="ghcr.io/${owner}/schoolbase-platform-collector:be-${backend_sha:0:12}"
+          fi
           {
             echo "backend_sha=$backend_sha"
-            echo "api_image=ghcr.io/${owner}/schoolbase-platform-api:be-${backend_sha:0:12}"
-            echo "collector_image=ghcr.io/${owner}/schoolbase-platform-collector:be-${backend_sha:0:12}"
+            echo "api_image=$api_image"
+            echo "collector_image=$collector_image"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
