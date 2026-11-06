@@ -76,3 +76,71 @@ if ! [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 echo "Platform API started, migrated ${count} files, and passed live/ready checks"
+
+operator_email=initial-platform-admin@example.invalid
+old_password=platform-smoke-original-123
+new_password='platform$smoke-recovered-123'
+
+docker exec -e "PLATFORM_BOOTSTRAP_EMAIL=$operator_email" \
+  -e PLATFORM_BOOTSTRAP_NAME='Platform Smoke Admin' \
+  -e "PLATFORM_BOOTSTRAP_PASSWORD=$old_password" \
+  "$api" node scripts/bootstrap-admin.js
+
+if [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -H 'content-type: application/json' \
+  -d '{"email":"initial-platform-admin@example.invalid","password":"platform-smoke-original-123"}' \
+  "http://127.0.0.1:${port}/operators/login")" != 201 ]]; then
+  echo 'Initial administrator could not log in before recovery' >&2
+  exit 1
+fi
+
+if docker exec -e PLATFORM_RECOVERY_EMAIL=wrong@example.invalid \
+  -e "PLATFORM_RECOVERY_PASSWORD=$new_password" \
+  "$api" node scripts/recover-initial-admin.js; then
+  echo 'Recovery accepted a different administrator email' >&2
+  exit 1
+fi
+
+docker exec -e "PLATFORM_RECOVERY_EMAIL=$operator_email" \
+  -e "PLATFORM_RECOVERY_PASSWORD=$new_password" \
+  "$api" node scripts/recover-initial-admin.js
+
+old_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -H 'content-type: application/json' \
+  -d '{"email":"initial-platform-admin@example.invalid","password":"platform-smoke-original-123"}' \
+  "http://127.0.0.1:${port}/operators/login")
+new_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -H 'content-type: application/json' \
+  -d '{"email":"initial-platform-admin@example.invalid","password":"platform$smoke-recovered-123"}' \
+  "http://127.0.0.1:${port}/operators/login")
+if [[ "$old_status" != 401 || "$new_status" != 201 ]]; then
+  echo "Recovery login outcomes were unexpected: old=$old_status new=$new_status" >&2
+  exit 1
+fi
+
+revoked=$(docker exec "$database" psql -U platform_smoke -d platform_smoke -Atqc \
+  'SELECT count(*) FROM platform_sessions WHERE revoked_at IS NOT NULL')
+audited=$(docker exec "$database" psql -U platform_smoke -d platform_smoke -Atqc \
+  "SELECT count(*) FROM platform_audit_events WHERE action = 'operator.password_recovered'")
+if [[ "$revoked" != 1 || "$audited" != 1 ]]; then
+  echo "Recovery side effects were unexpected: revoked=$revoked audited=$audited" >&2
+  exit 1
+fi
+
+docker exec "$database" psql -U platform_smoke -d platform_smoke -q -c \
+  "INSERT INTO platform_operators (email, display_name, role, password_hash)
+   SELECT 'second@example.invalid', 'Second Operator', 'viewer', password_hash
+   FROM platform_operators WHERE email = '$operator_email'" >/dev/null
+if docker exec -e "PLATFORM_RECOVERY_EMAIL=$operator_email" \
+  -e "PLATFORM_RECOVERY_PASSWORD=$old_password" \
+  "$api" node scripts/recover-initial-admin.js; then
+  echo 'Recovery accepted a database with multiple operators' >&2
+  exit 1
+fi
+audited=$(docker exec "$database" psql -U platform_smoke -d platform_smoke -Atqc \
+  "SELECT count(*) FROM platform_audit_events WHERE action = 'operator.password_recovered'")
+if [[ "$audited" != 1 ]]; then
+  echo 'Rejected multi-operator recovery wrote an audit event' >&2
+  exit 1
+fi
+echo 'Initial administrator recovery, session revocation, and audit checks passed'

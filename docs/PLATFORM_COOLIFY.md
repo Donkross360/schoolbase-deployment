@@ -54,6 +54,8 @@ The API image already migrates on startup under a PostgreSQL advisory lock. Do n
 3. Delete the temporary task, remove all three bootstrap variables from Coolify, and redeploy. Recheck `/health/ready`. Keep the audit event and operator record in PostgreSQL.
 4. From an admitted client, use `POST /operators/login` with that operator's email and password. The response has an eight-hour bearer token. `GET /operators/me` with that token should show `platform_admin`. Keep the token out of logs and documents.
 
+If the first login is rejected after bootstrap, the API image includes `node scripts/recover-initial-admin.js`. Use it only while the database has exactly one active platform administrator and no other operators. Set temporary runtime-only `PLATFORM_RECOVERY_EMAIL` to that operator's email and `PLATFORM_RECOVERY_PASSWORD` to a **new** password of at least 12 characters. Mark the password **Is Literal** if it contains `$`, redeploy, and execute the script once through a temporary Scheduled Task targeting `api`. It changes the password, revokes existing sessions, and records an `operator.password_recovered` audit event. Confirm `Initial platform administrator password recovered`, delete the task, remove both recovery variables, redeploy, and sign in with the new password. Never put a password in the task command or logs.
+
 There is no registry creation form in `/admin` yet. The next step uses the authenticated API.
 
 For the API steps below, use a trusted HTTP client with the platform operator token as `Authorization: Bearer <token>`. For example, after entering the token through a hidden prompt in a private shell, a read looks like this:
