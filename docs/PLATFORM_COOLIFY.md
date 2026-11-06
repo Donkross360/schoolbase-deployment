@@ -56,7 +56,7 @@ The API image already migrates on startup under a PostgreSQL advisory lock. Do n
 
 If the first login is rejected after bootstrap, the API image includes `node scripts/recover-initial-admin.js`. Use it only while the database has exactly one active platform administrator and no other operators. Set temporary runtime-only `PLATFORM_RECOVERY_EMAIL` to that operator's email and `PLATFORM_RECOVERY_PASSWORD` to a **new** password of at least 12 characters. Mark the password **Is Literal** if it contains `$`, redeploy, and execute the script once through a temporary Scheduled Task targeting `api`. It changes the password, revokes existing sessions, and records an `operator.password_recovered` audit event. Confirm `Initial platform administrator password recovered`, delete the task, remove both recovery variables, redeploy, and sign in with the new password. Never put a password in the task command or logs.
 
-There is no registry creation form in `/admin` yet. The next step uses the authenticated API.
+Once the website frontend containing the school registration form is deployed (section 5), a platform operator can register each existing school at `/admin/schools/new`. Check the school list first to avoid duplicate records, enter the school's actual website and API origins, and give a reason. The form records the school and opens its detail page. The API procedure below is an alternative for setup clients with an operator token.
 
 For the API steps below, use a trusted HTTP client with the platform operator token as `Authorization: Bearer <token>`. For example, after entering the token through a hidden prompt in a private shell, a read looks like this:
 
