@@ -2,7 +2,7 @@
 
 This guide deploys the private operator dashboard at `schoolbase.africa/admin` and prepares a Demo and St Paul pilot. The platform API and database are separate from each school's combined image and from the existing website backend. Keep the existing school and website databases unchanged.
 
-The current code supports registry, availability probes, staff login reports, capacity samples, trends, and dashboard capacity alerts. Container and proxy metric collectors, availability alerts, and alert email are still outstanding. The pilot is complete only after live readings are checked against their sources.
+The current code supports registry, availability probes, staff login and school database-size reports, capacity samples, trends, and dashboard capacity alerts. Container and proxy metric collectors, availability alerts, and alert email are still outstanding. The pilot is complete only after live readings are checked against their sources.
 
 ## 0. Record the inputs
 
@@ -125,6 +125,14 @@ The combined school's Compose file passes its configured `SCHOOLBASE_IMAGE` into
 2. Within five minutes, reload `/admin`. The overview shows each school's reported image. Open each school for its last received time and separate frontend/backend availability. **Refresh status** rereads Platform's most recent report; the school sends a new one on startup and every five minutes.
 3. Compare Demo and St Paul's displayed image references with the `SCHOOLBASE_IMAGE` value on their respective Coolify resources. They must be distinct when the schools run different images. If a report is older than 15 minutes, Platform marks the image unavailable until a new report arrives.
 
+### Show each school's database size
+
+The school backend already receives `DB_HOST`, `DB_USER`, `DB_PASS`, and `DB_NAME`. It reads only `pg_database_size(current_database())` through that connection, verifies the returned name against `DB_NAME`, and includes the byte count in its existing school-scoped Platform report at most once per hour. No new Coolify variable, database role, collector token, worker, or Scheduled Task is needed for this reading. A failed size query does not stop staff activity or image reporting.
+
+1. Deploy the Platform API image containing migration `008_school_database_size.sql` before deploying the new combined school image. The website frontend can be redeployed before or after the school image; it shows **Unavailable** until the first size report arrives.
+2. Redeploy Demo's combined image, then open Demo's Platform detail page after its first report. Check **School-reported database size**, database name, source, and observation time. Do the same for St Paul. Each value is bound to the existing school token and must appear only under that school.
+3. Compare each displayed byte count with `SELECT pg_database_size(current_database());` run against that school's database by its administrator. Record the difference and sample times. Do not treat the report as independently verified until this comparison passes. A missing or older-than-two-hours reading is unavailable.
+
 ## 7. Add private metric workers one at a time
 
 Coolify [Scheduled Tasks](https://coolify.io/docs/applications/operations/scheduled-tasks) run commands **inside a running container**. The collector image keeps a private worker alive; the scheduled command runs once and exits. Create a separate **Docker Image** resource for each collector credential using the exact `PLATFORM_COLLECTOR_DIGEST` from step 2, **no domain and no public port**. Remove any generated proxy domain. If GHCR is private, give Coolify package read access. Confirm its container stays running before creating a task.
@@ -141,13 +149,11 @@ Coolify evaluates cron schedules in the deployment server's timezone. Confirm th
 
 | Source | Credential scope and reference | Additional worker variables | Command and starting schedule |
 | --- | --- | --- | --- |
-| Demo PostgreSQL size | `school`, `demo`, exact `sb_demo` database | Dedicated read-only `METRICS_DATABASE_URL` and `METRICS_DATABASE_NAME=sb_demo` | `node scripts/collect-database-size.js`, `7 * * * *` |
-| St Paul PostgreSQL size | `school`, `stpaul`, actual database name | Its own read-only URL and database name | Same command, `17 * * * *` |
 | Demo MinIO bucket | `school`, `demo`, exact Demo bucket | `METRICS_MINIO_URL`, `METRICS_MINIO_TOKEN`, `METRICS_MINIO_BUCKET` | `node scripts/collect-minio-bucket.js`, `27 * * * *`, after endpoint verification |
 | St Paul MinIO bucket | `school`, `stpaul`, exact St Paul bucket | Its own bucket and metrics access | Same command, `37 * * * *`, after endpoint verification |
 | Shared host/volume disk | `shared`, `host`, verified filesystem identity | `METRICS_DISK_PATH` = verified mounted path | `node scripts/collect-disk-headroom.js`, once per minute after safe mount verification |
 
-For database jobs, provision a role that can connect to the intended school database and read `pg_database_size`, with no school table grants. Verify `current_database()` equals `METRICS_DATABASE_NAME`; the collector refuses a mismatch. For MinIO, verify the live `/minio/metrics/v3/cluster/usage/buckets` endpoint, scrape token, exact bucket label, and scan freshness. Do not assume the synthetic v3 test proves the deployed endpoint.
+The separate database-size collector remains available if a school later needs an independent source. It is not required for this pilot. For MinIO, verify the live `/minio/metrics/v3/cluster/usage/buckets` endpoint, scrape token, exact bucket label, and scan freshness. Do not assume the synthetic v3 test proves the deployed endpoint.
 
 The disk collector measures the filesystem containing `METRICS_DISK_PATH` **inside its container**. Without an explicit verified mount it measures the collector container filesystem, not PostgreSQL or MinIO storage. Do not mount raw school database or MinIO data directories into a worker merely to obtain disk totals. Use a verified read-only host/volume mount or a host metrics agent; defer this source if a safe path cannot be established.
 
