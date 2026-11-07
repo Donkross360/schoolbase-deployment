@@ -135,25 +135,48 @@ The school backend already receives `DB_HOST`, `DB_USER`, `DB_PASS`, and `DB_NAM
 
 ## 7. Add private metric workers one at a time
 
-Coolify [Scheduled Tasks](https://coolify.io/docs/applications/operations/scheduled-tasks) run commands **inside a running container**. The collector image keeps a private worker alive; the scheduled command runs once and exits. Create a separate **Docker Image** resource for each collector credential using the exact `PLATFORM_COLLECTOR_DIGEST` from step 2, **no domain and no public port**. Remove any generated proxy domain. If GHCR is private, give Coolify package read access. Confirm its container stays running before creating a task.
+Coolify [Scheduled Tasks](https://coolify.io/docs/applications/operations/scheduled-tasks) run commands **inside a running container**. The collector image keeps a private worker alive; the scheduled command runs once and exits. Use a private **Docker Image** resource with no domain or public port. Remove any generated proxy domain. If GHCR is private, give Coolify package read access. Confirm its container stays running before creating a task. One resource can run several tasks for buckets in the same MinIO deployment; each task must use that school's own Platform reporting token.
 
 Do not configure an HTTP health path for a worker: it has no HTTP server. Check its running container state and scheduled-task execution history instead.
 
-For each worker:
+For each source:
 
-1. Read the real source identity. Create a scoped credential with `POST /metric-collectors`. Supply `scope`, `school_id` where applicable, `source`, `resource_ref`, and a reason. The response contains a one-time `token`; save it only as this worker's secret `METRICS_COLLECTOR_TOKEN`.
+1. Read the real source identity. Create a scoped credential with `POST /metric-collectors`. Supply `scope`, `school_id` where applicable, `source`, `resource_ref`, and a reason. The response contains a one-time `token`; save it only in the collector resource's runtime secrets. Never reuse one school's Platform token for another school.
 2. Set `METRICS_PLATFORM_URL=https://<platform-api-host>/metric-reports`. Use runtime-only secrets. Confirm the worker can reach the API.
-3. Add source-specific variables and the command below. In **Scheduled Tasks → Add**, enter the command without `docker exec` and use a timeout of at least 60 seconds. Select **Execute now**, inspect **Recent executions**, then compare the received platform reading with the source before leaving the task enabled.
+3. Add source-specific variables and the command below. In **Scheduled Tasks → Add**, enter the command without `docker exec` and use a timeout of at least 60 seconds. Coolify creates the task enabled. Select **Execute Now**, inspect **Recent executions**, then compare the received Platform reading with the source before relying on its schedule.
 
 Coolify evaluates cron schedules in the deployment server's timezone. Confirm that timezone before using the times below; the minute offsets stagger the initial load.
 
 | Source | Credential scope and reference | Additional worker variables | Command and starting schedule |
 | --- | --- | --- | --- |
 | Demo MinIO bucket | `school`, `demo`, exact Demo bucket | `METRICS_MINIO_URL`, `METRICS_MINIO_TOKEN`, `METRICS_MINIO_BUCKET` | `node scripts/collect-minio-bucket.js`, `27 * * * *`, after endpoint verification |
-| St Paul MinIO bucket | `school`, `stpaul`, exact St Paul bucket | Its own bucket and metrics access | Same command, `37 * * * *`, after endpoint verification |
+| St Paul MinIO bucket | `school`, `stpaul`, exact St Paul bucket | Same MinIO URL and metrics-only bearer; `METRICS_STPAUL_COLLECTOR_TOKEN` is a new school-scoped Platform token | `METRICS_MINIO_BUCKET=stpaul METRICS_COLLECTOR_TOKEN="$METRICS_STPAUL_COLLECTOR_TOKEN" node scripts/collect-minio-bucket.js`, `37 * * * *`, after source comparison |
 | Shared host/volume disk | `shared`, `host`, verified filesystem identity | `METRICS_DISK_PATH` = verified mounted path | `node scripts/collect-disk-headroom.js`, once per minute after safe mount verification |
 
 The separate database-size collector remains available if a school later needs an independent source. It is not required for this pilot. For MinIO, verify the live `/minio/metrics/v3/cluster/usage/buckets` endpoint, scrape token, exact bucket label, and scan freshness. Do not assume the synthetic v3 test proves the deployed endpoint.
+
+### Demo and St Paul on one MinIO collector resource
+
+The root MinIO credential is used only to create a dedicated access key restricted to `admin:Prometheus`. The running collector receives a bearer signed by that restricted key, not the root credential. The bearer can scrape cluster usage for both buckets. The Platform reporting tokens remain school-scoped.
+
+The Demo resource already has `METRICS_MINIO_BUCKET=demo`, `METRICS_MINIO_URL=https://files.schoolbase.africa/minio/metrics/v3/cluster/usage/buckets`, `METRICS_MINIO_TOKEN`, `METRICS_PLATFORM_URL=https://api.platform.schoolbase.africa/metric-reports`, and Demo's `METRICS_COLLECTOR_TOKEN`. Its existing task is `node scripts/collect-minio-bucket.js` at `27 * * * *`. A Platform screenshot on 7 November 2026 showed a current Demo object-store reading of 42 objects and 13.65 MiB, matching the earlier direct MinIO sample of 42 objects and 14,312,594 bytes. Recheck against a fresh source reading if contents change.
+
+To add St Paul without another resource or another MinIO bearer:
+
+1. As a `platform_admin`, call `POST /metric-collectors` with `{"scope":"school","school_id":"stpaul","source":"object_store","resource_ref":"stpaul","reason":"Collect St Paul MinIO bucket usage"}`. Copy the returned one-time token privately.
+2. Add that token to the existing collector resource as a runtime-only `METRICS_STPAUL_COLLECTOR_TOKEN`; save and redeploy the resource. Do not change Demo's `METRICS_COLLECTOR_TOKEN` or `METRICS_MINIO_BUCKET`.
+3. Add a second Coolify Scheduled Task to the same resource: name `St Paul MinIO usage`; command `METRICS_MINIO_BUCKET=stpaul METRICS_COLLECTOR_TOKEN="$METRICS_STPAUL_COLLECTOR_TOKEN" node scripts/collect-minio-bucket.js`; frequency `37 * * * *`; timeout at least 60 seconds; leave Container name empty for this single-container resource. Coolify creates the task enabled; no separate Enable action is needed. Run **Execute Now** and inspect Recent executions.
+4. Confirm the reading appears only under St Paul and matches a fresh direct reading of bucket `stpaul`. The earlier direct reading was 1 object and 32,697 bytes; use the current source value if the bucket changed. Demo's reading must remain under Demo.
+
+On 7 November 2026 the operator reported that object-store metrics are visible for both Demo and St Paul. This confirms the UI is receiving samples for both schools; a fresh direct St Paul source comparison and later scheduled-run checks are still needed before calling its attribution verified.
+
+The current flow is: the private collector pulls MinIO metrics hourly, then pushes each bucket's reading to Platform with the matching school token; the dashboard reads stored samples. `27 * * * *` and `37 * * * *` mean minute 27 and minute 37 of every hour in the Coolify server timezone. They stagger work by ten minutes; each run is a current snapshot, not a measurement of the preceding hour. Bucket contents change infrequently in this pilot, so keep the working hourly schedule for now. Revisit collection mode when onboarding or freshness needs change: compare this schedule with a Platform-initiated pull, source-initiated push, and an operator-triggered collection button. Evaluate credential placement, school attribution, stale-data behavior, operational effort, and whether a button should fetch a new source reading or only reload stored samples. Do not label a dashboard reload as a new measurement unless it actually runs the collector.
+
+The school detail page shows each metric's latest `observed_at` snapshot as **Last measured**, in Lagos time. It does not plot hourly trend lines. The Platform API still retains hourly aggregates for later analysis.
+
+The school detail page can also compare current object-store usage with an optional per-school allocation set by a Platform administrator. That allocation is an audited monitoring target in the Platform registry. It is not a MinIO bucket quota, and `APP_MEMORY_LIMIT`/`APP_CPU_LIMIT` in `compose.school.yml` do not define storage. Leave the allocation unset until the school's allowance has been agreed. A stale or missing bucket reading must not be shown as a current remaining balance.
+
+If another source needs a different trust or runtime boundary, give it a separate resource. A single MinIO resource holding two Platform tokens has authority to report for both schools, so keep it private and limit who can edit its environment variables.
 
 The disk collector measures the filesystem containing `METRICS_DISK_PATH` **inside its container**. Without an explicit verified mount it measures the collector container filesystem, not PostgreSQL or MinIO storage. Do not mount raw school database or MinIO data directories into a worker merely to obtain disk totals. Use a verified read-only host/volume mount or a host metrics agent; defer this source if a safe path cannot be established.
 
